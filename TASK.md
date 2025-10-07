@@ -38,10 +38,10 @@ source venv/bin/activate
   pydantic==2.5.0
   pydantic-settings==2.1.0
   ```
-- [ ] Install dependencies: `pip install -r requirements.txt`
-- [ ] Create `backend/api/main.py` with basic FastAPI app
-- [ ] Create `backend/core/config.py` for settings management
-- [ ] Create `.env` file with basic configuration
+- [x] Install dependencies: `pip install -r requirements.txt`
+- [x] Create `backend/api/main.py` with basic FastAPI app
+- [x] Create `backend/core/config.py` for settings management
+- [x] Create `.env` file with basic configuration
 - [ ] Test server startup: `uvicorn api.main:app --reload`
 - [ ] Verify health check endpoint works
 
