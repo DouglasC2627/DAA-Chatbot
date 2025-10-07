@@ -1,0 +1,776 @@
+# TASK.md - Sequential Build Tasks for Local RAG Chatbot "DAA Chatbot"
+
+## Prerequisites Checklist
+- [ ] Install Python 3.11 or higher
+- [ ] Install Node.js 18+ and npm
+- [ ] Install Git
+- [ ] Install Visual Studio Code
+- [ ] Install Ollama locally
+- [ ] Pull at least one Ollama model (`ollama pull llama3.2`)
+- [ ] Pull embedding model (`ollama pull nomic-embed-text`)
+- [ ] Set up GitHub repository
+- [ ] Configure VSCode with necessary extensions
+
+---
+
+## PHASE 1: Project Foundation
+
+### Task 1.1: Initialize Project Structure
+- [x] Create basic directory structure
+- [x] Initialize Git repository
+- [x] Create `.gitignore` file
+- [x] Create `README.md` with project description
+- [x] Add `ABOUT.md` and `TASK.md` files
+- [x] Make initial commit
+
+### Task 1.2: Backend Foundation Setup
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+```
+- [ ] Create Python virtual environment
+- [ ] Create `requirements.txt` with initial dependencies:
+  ```
+  fastapi==0.104.1
+  uvicorn[standard]==0.24.0
+  python-dotenv==1.0.0
+  pydantic==2.5.0
+  pydantic-settings==2.1.0
+  ```
+- [ ] Install dependencies: `pip install -r requirements.txt`
+- [ ] Create `backend/api/main.py` with basic FastAPI app
+- [ ] Create `backend/core/config.py` for settings management
+- [ ] Create `.env` file with basic configuration
+- [ ] Test server startup: `uvicorn api.main:app --reload`
+- [ ] Verify health check endpoint works
+
+### Task 1.3: Frontend Foundation Setup
+```bash
+cd frontend
+npx create-next-app@14 . --typescript --tailwind --app
+```
+- [ ] Initialize Next.js project with TypeScript
+- [ ] Install additional dependencies:
+  ```bash
+  npm install axios zustand @tanstack/react-query
+  npm install -D @types/node
+  ```
+- [ ] Configure `tsconfig.json` with path aliases
+- [ ] Set up `next.config.js` with API proxy
+- [ ] Create basic folder structure in `app/`
+- [ ] Create `.env.local` with API URL
+- [ ] Test development server: `npm run dev`
+- [ ] Verify Next.js app loads
+
+### Task 1.4: Development Environment Configuration
+- [ ] Create `docker-compose.yml` for future containerization
+- [ ] Set up VSCode workspace settings
+- [ ] Configure Python linting (Black, pylint)
+- [ ] Configure ESLint and Prettier for frontend
+- [ ] Create pre-commit hooks
+- [ ] Document development setup in README
+
+---
+
+## PHASE 2: Data Layer Setup
+
+### Task 2.1: Database Setup
+```bash
+# Backend dependencies
+pip install sqlalchemy==2.0.23 alembic==1.13.0 aiosqlite==0.19.0
+```
+- [ ] Create `backend/models/base.py` with SQLAlchemy base
+- [ ] Create database models:
+  - [ ] `models/project.py`
+  - [ ] `models/document.py`
+  - [ ] `models/chat.py`
+  - [ ] `models/message.py`
+  - [ ] `models/user_settings.py`
+- [ ] Set up Alembic for migrations
+- [ ] Create initial migration
+- [ ] Create database initialization script
+- [ ] Test database connection and models
+- [ ] Create basic CRUD operations
+
+### Task 2.2: Vector Store Setup
+```bash
+pip install chromadb==0.4.22
+```
+- [ ] Create `backend/core/vectorstore.py`
+- [ ] Initialize ChromaDB client with persistence
+- [ ] Create collection management functions
+- [ ] Implement vector storage methods
+- [ ] Test vector insertion and retrieval
+- [ ] Create collection per project logic
+- [ ] Implement metadata filtering
+
+### Task 2.3: File Storage System
+- [ ] Create storage directory structure
+- [ ] Implement file upload validation
+- [ ] Create document storage service
+- [ ] Add file size checking
+- [ ] Implement file type validation
+- [ ] Create file cleanup utilities
+- [ ] Test file upload/download
+
+---
+
+## PHASE 3: LLM Integration
+
+### Task 3.1: Ollama Integration
+```bash
+pip install ollama==0.1.7 langchain==0.1.0 langchain-community==0.0.10
+```
+- [ ] Create `backend/core/llm.py`
+- [ ] Implement Ollama client wrapper
+- [ ] Create model listing endpoint
+- [ ] Test basic LLM inference
+- [ ] Implement streaming responses
+- [ ] Add error handling for Ollama connection
+- [ ] Create model switching functionality
+
+### Task 3.2: Document Processing Pipeline
+```bash
+pip install pypdf==3.17.0 python-docx==1.1.0 openpyxl==3.1.2 unstructured==0.11.0
+```
+- [ ] Create `backend/services/document_processor.py`
+- [ ] Implement PDF processing
+- [ ] Implement DOCX processing  
+- [ ] Implement TXT/MD processing
+- [ ] Implement CSV/XLSX processing
+- [ ] Create text extraction pipeline
+- [ ] Add metadata extraction
+- [ ] Test with various file formats
+
+### Task 3.3: Embeddings & Chunking
+```bash
+pip install tiktoken==0.5.2
+```
+- [ ] Create `backend/core/embeddings.py`
+- [ ] Implement embedding generation using Ollama
+- [ ] Create `backend/core/chunking.py`
+- [ ] Implement recursive text splitter
+- [ ] Add chunk overlap logic
+- [ ] Create chunking strategies per file type
+- [ ] Test embedding generation
+- [ ] Optimize chunk sizes
+
+---
+
+## PHASE 4: RAG Pipeline (Days 10-12)
+
+### Task 4.1: RAG Core Implementation
+- [ ] Create `backend/core/rag_pipeline.py`
+- [ ] Implement retrieval logic
+- [ ] Create prompt templates
+- [ ] Build context injection
+- [ ] Implement source tracking
+- [ ] Add relevance scoring
+- [ ] Create response generation
+- [ ] Test end-to-end RAG flow
+
+### Task 4.2: Chat Service
+- [ ] Create `backend/services/chat_service.py`
+- [ ] Implement conversation management
+- [ ] Add message history handling
+- [ ] Create context window management
+- [ ] Implement conversation memory
+- [ ] Add response streaming
+- [ ] Test chat functionality
+
+### Task 4.3: API Endpoints - Core
+- [ ] Create `backend/api/routes/chat.py`
+- [ ] Implement POST `/api/chats/{id}/messages`
+- [ ] Implement GET `/api/chats/{id}`
+- [ ] Create `backend/api/routes/documents.py`
+- [ ] Implement POST `/api/projects/{id}/documents`
+- [ ] Implement document processing endpoint
+- [ ] Add error handling middleware
+- [ ] Test all endpoints with Postman/curl
+
+---
+
+## PHASE 5: Project Management System
+
+### Task 5.1: Project Service Implementation
+- [ ] Create `backend/services/project_service.py`
+- [ ] Implement project CRUD operations
+- [ ] Add project-document associations
+- [ ] Create project isolation logic
+- [ ] Implement project settings management
+- [ ] Add project export functionality
+- [ ] Create project import functionality
+
+### Task 5.2: Project API Endpoints
+- [ ] Create `backend/api/routes/projects.py`
+- [ ] Implement GET `/api/projects`
+- [ ] Implement POST `/api/projects`
+- [ ] Implement GET `/api/projects/{id}`
+- [ ] Implement PUT `/api/projects/{id}`
+- [ ] Implement DELETE `/api/projects/{id}`
+- [ ] Add project switching logic
+- [ ] Test project isolation
+
+### Task 5.3: Document Management Enhancement
+- [ ] Link documents to projects
+- [ ] Implement document listing per project
+- [ ] Add document deletion
+- [ ] Create document metadata updates
+- [ ] Implement bulk operations
+- [ ] Add document search within project
+- [ ] Test document-project relationship
+
+---
+
+## PHASE 6: Frontend Foundation
+
+### Task 6.1: UI Component Library Setup
+```bash
+npx shadcn-ui@latest init
+npx shadcn-ui@latest add button card dialog form input label select textarea toast
+npm install lucide-react framer-motion
+```
+- [ ] Configure shadcn/ui
+- [ ] Set up Tailwind CSS properly
+- [ ] Create theme configuration
+- [ ] Set up global styles
+- [ ] Create layout components
+- [ ] Implement dark mode toggle
+- [ ] Test component rendering
+
+### Task 6.2: State Management Setup
+```bash
+npm install zustand @tanstack/react-query socket.io-client
+```
+- [ ] Create `frontend/stores/chatStore.ts`
+- [ ] Create `frontend/stores/projectStore.ts`
+- [ ] Create `frontend/stores/documentStore.ts`
+- [ ] Set up React Query provider
+- [ ] Create API client wrapper
+- [ ] Implement error handling
+- [ ] Set up WebSocket client
+
+### Task 6.3: Layout & Navigation
+- [ ] Create `frontend/components/layout/Header.tsx`
+- [ ] Create `frontend/components/layout/Sidebar.tsx`
+- [ ] Create `frontend/components/layout/Footer.tsx`
+- [ ] Implement responsive navigation
+- [ ] Add project switcher
+- [ ] Create breadcrumb navigation
+- [ ] Test responsive design
+
+---
+
+## PHASE 7: Frontend Core Features
+
+### Task 7.1: Project Management UI
+- [ ] Create `frontend/app/projects/page.tsx`
+- [ ] Create `frontend/components/projects/ProjectList.tsx`
+- [ ] Create `frontend/components/projects/ProjectCreate.tsx`
+- [ ] Create `frontend/components/projects/ProjectCard.tsx`
+- [ ] Implement project CRUD UI
+- [ ] Add project settings modal
+- [ ] Create project deletion confirmation
+- [ ] Test project management flow
+
+### Task 7.2: Document Management UI
+```bash
+npm install react-dropzone
+```
+- [ ] Create `frontend/components/documents/DocumentUpload.tsx`
+- [ ] Create `frontend/components/documents/DocumentList.tsx`
+- [ ] Create `frontend/components/documents/DocumentCard.tsx`
+- [ ] Implement drag-and-drop upload
+- [ ] Add upload progress indicators
+- [ ] Create document preview
+- [ ] Implement bulk upload
+- [ ] Test file upload with various formats
+
+### Task 7.3: Chat Interface Foundation
+- [ ] Create `frontend/app/chat/[projectId]/page.tsx`
+- [ ] Create `frontend/components/chat/ChatInterface.tsx`
+- [ ] Create `frontend/components/chat/MessageList.tsx`
+- [ ] Create `frontend/components/chat/MessageInput.tsx`
+- [ ] Create `frontend/components/chat/Message.tsx`
+- [ ] Implement basic message display
+- [ ] Add message input handling
+- [ ] Test basic chat UI
+
+---
+
+## PHASE 8: Real-time Features
+
+### Task 8.1: WebSocket Implementation - Backend
+```bash
+pip install python-socketio==5.10.0 python-multipart==0.0.6
+```
+- [ ] Create `backend/api/websocket/chat_ws.py`
+- [ ] Implement WebSocket connection handling
+- [ ] Add streaming response support
+- [ ] Create room management for projects
+- [ ] Implement connection authentication
+- [ ] Add error handling for disconnections
+- [ ] Test WebSocket connections
+
+### Task 8.2: WebSocket Integration - Frontend
+- [ ] Create `frontend/lib/websocket.ts`
+- [ ] Implement WebSocket connection manager
+- [ ] Add auto-reconnection logic
+- [ ] Create streaming message handler
+- [ ] Implement connection status indicator
+- [ ] Add real-time typing indicators
+- [ ] Test streaming responses
+
+### Task 8.3: Live Updates
+- [ ] Implement live document processing status
+- [ ] Add real-time chat updates
+- [ ] Create notification system
+- [ ] Implement progress bars for operations
+- [ ] Add connection status UI
+- [ ] Test real-time features
+- [ ] Handle offline scenarios
+
+---
+
+## PHASE 9: Advanced Features
+
+### Task 9.1: Source Attribution
+```bash
+npm install react-markdown react-syntax-highlighter
+```
+- [ ] Create `frontend/components/chat/SourceReferences.tsx`
+- [ ] Implement source linking in responses
+- [ ] Add source preview modal
+- [ ] Create citation formatting
+- [ ] Implement source highlighting
+- [ ] Add "jump to source" functionality
+- [ ] Test source attribution accuracy
+
+### Task 9.2: Chat History & Management
+- [ ] Implement chat history persistence
+- [ ] Create chat listing UI
+- [ ] Add chat search functionality
+- [ ] Implement chat deletion
+- [ ] Create chat renaming
+- [ ] Add chat export (MD, JSON)
+- [ ] Implement chat sharing
+- [ ] Test chat management features
+
+### Task 9.3: Search & Filtering
+- [ ] Create advanced search UI
+- [ ] Implement document filtering
+- [ ] Add date range filters
+- [ ] Create file type filters
+- [ ] Implement semantic search UI
+- [ ] Add search history
+- [ ] Test search functionality
+
+---
+
+## PHASE 10: External Integrations
+
+### Task 10.1: Google Drive Integration - Backend
+```bash
+pip install google-api-python-client==2.108.0 google-auth-httplib2==0.1.1 google-auth-oauthlib==1.1.0
+```
+- [ ] Create `backend/services/google_drive.py`
+- [ ] Implement OAuth2 flow
+- [ ] Create file listing endpoint
+- [ ] Implement file import functionality
+- [ ] Add permission handling
+- [ ] Create sync mechanism
+- [ ] Test Google Drive integration
+
+### Task 10.2: Google Drive Integration - Frontend
+- [ ] Create integration settings page
+- [ ] Implement OAuth connection UI
+- [ ] Create file browser for Google Drive
+- [ ] Add import selection UI
+- [ ] Implement sync status display
+- [ ] Add disconnect functionality
+- [ ] Test complete integration flow
+
+### Task 10.3: Integration Management
+- [ ] Create `backend/api/routes/integrations.py`
+- [ ] Implement integration status endpoints
+- [ ] Add integration settings storage
+- [ ] Create activity logging
+- [ ] Implement error recovery
+- [ ] Add rate limiting
+- [ ] Test integration resilience
+
+---
+
+## PHASE 11: Authentication & Security
+
+### Task 11.1: Authentication System
+```bash
+pip install python-jose[cryptography]==3.3.0 passlib[bcrypt]==1.7.4
+```
+- [ ] Create `backend/api/routes/auth.py`
+- [ ] Implement JWT token generation
+- [ ] Create login endpoint
+- [ ] Add session management
+- [ ] Implement refresh tokens
+- [ ] Create middleware for auth
+- [ ] Test authentication flow
+
+### Task 11.2: Security Enhancements
+- [ ] Implement input sanitization
+- [ ] Add rate limiting middleware
+- [ ] Create CORS configuration
+- [ ] Implement file type validation
+- [ ] Add SQL injection prevention
+- [ ] Create security headers
+- [ ] Test security measures
+
+### Task 11.3: Frontend Authentication
+```bash
+npm install js-cookie axios-auth-refresh
+```
+- [ ] Create login page
+- [ ] Implement auth context
+- [ ] Add protected routes
+- [ ] Create auth interceptors
+- [ ] Implement token refresh
+- [ ] Add logout functionality
+- [ ] Test auth flow end-to-end
+
+---
+
+## PHASE 12: Performance Optimization
+
+### Task 12.1: Backend Optimization
+```bash
+pip install redis==5.0.1 aiocache==0.12.2
+```
+- [ ] Implement caching layer
+- [ ] Optimize database queries
+- [ ] Add connection pooling
+- [ ] Implement batch processing
+- [ ] Optimize chunking strategy
+- [ ] Add async operations
+- [ ] Profile and benchmark
+
+### Task 12.2: Frontend Optimization
+```bash
+npm install @tanstack/react-virtual react-intersection-observer
+```
+- [ ] Implement lazy loading
+- [ ] Add virtual scrolling for lists
+- [ ] Optimize bundle size
+- [ ] Implement code splitting
+- [ ] Add image optimization
+- [ ] Create loading skeletons
+- [ ] Test performance metrics
+
+### Task 12.3: RAG Optimization
+- [ ] Optimize retrieval algorithms
+- [ ] Implement hybrid search
+- [ ] Add result caching
+- [ ] Optimize prompt templates
+- [ ] Implement parallel processing
+- [ ] Add batch embeddings
+- [ ] Test RAG performance
+
+---
+
+## PHASE 13: User Experience Polish
+
+### Task 13.1: UI/UX Improvements
+- [ ] Add loading states everywhere
+- [ ] Implement error boundaries
+- [ ] Create empty states
+- [ ] Add tooltips and hints
+- [ ] Implement keyboard shortcuts
+- [ ] Create onboarding tour
+- [ ] Add animations and transitions
+- [ ] Test UX flows
+
+### Task 13.2: Accessibility
+- [ ] Add ARIA labels
+- [ ] Implement keyboard navigation
+- [ ] Ensure color contrast compliance
+- [ ] Add screen reader support
+- [ ] Create focus management
+- [ ] Implement skip links
+- [ ] Test with accessibility tools
+
+### Task 13.3: Responsive Design
+- [ ] Test on mobile devices
+- [ ] Optimize touch interactions
+- [ ] Create mobile-specific layouts
+- [ ] Implement responsive tables
+- [ ] Add mobile navigation
+- [ ] Test on various screen sizes
+- [ ] Fix responsive issues
+
+---
+
+## PHASE 14: Testing & Quality Assurance
+
+### Task 14.1: Backend Testing
+```bash
+pip install pytest==7.4.3 pytest-asyncio==0.21.1 pytest-cov==4.1.0
+```
+- [ ] Write unit tests for services
+- [ ] Create integration tests for API
+- [ ] Test database operations
+- [ ] Test file processing
+- [ ] Test RAG pipeline
+- [ ] Implement test fixtures
+- [ ] Achieve 80% coverage
+
+### Task 14.2: Frontend Testing
+```bash
+npm install -D jest @testing-library/react @testing-library/jest-dom @testing-library/user-event
+```
+- [ ] Write component unit tests
+- [ ] Create integration tests
+- [ ] Test state management
+- [ ] Test API interactions
+- [ ] Implement E2E tests
+- [ ] Test error scenarios
+- [ ] Achieve good coverage
+
+### Task 14.3: End-to-End Testing
+```bash
+npm install -D playwright @playwright/test
+```
+- [ ] Create E2E test scenarios
+- [ ] Test complete user flows
+- [ ] Test file upload flows
+- [ ] Test chat interactions
+- [ ] Test project management
+- [ ] Test error recovery
+- [ ] Automate test runs
+
+---
+
+## PHASE 15: Documentation
+
+### Task 15.1: Code Documentation
+- [ ] Add docstrings to all Python functions
+- [ ] Add JSDoc comments to TypeScript
+- [ ] Create inline code comments
+- [ ] Document complex algorithms
+- [ ] Create architecture diagrams
+- [ ] Document design decisions
+- [ ] Update ABOUT.md if needed
+
+### Task 15.2: API Documentation
+```bash
+# FastAPI automatically generates OpenAPI docs
+```
+- [ ] Review auto-generated docs
+- [ ] Add endpoint descriptions
+- [ ] Document request/response schemas
+- [ ] Create API usage examples
+- [ ] Document error codes
+- [ ] Create Postman collection
+- [ ] Test all documented endpoints
+
+### Task 15.3: User Documentation
+- [ ] Create user guide
+- [ ] Write installation instructions
+- [ ] Create configuration guide
+- [ ] Document troubleshooting steps
+- [ ] Create FAQ section
+- [ ] Add screenshots/videos
+- [ ] Create quick start guide
+
+---
+
+## PHASE 16: Deployment Preparation
+
+### Task 16.1: Environment Configuration
+- [ ] Create production .env template
+- [ ] Set up environment validation
+- [ ] Create deployment scripts
+- [ ] Configure logging
+- [ ] Set up monitoring
+- [ ] Create backup scripts
+- [ ] Document deployment process
+
+### Task 16.2: Containerization
+```bash
+# Docker setup
+```
+- [ ] Create backend Dockerfile
+- [ ] Create frontend Dockerfile
+- [ ] Update docker-compose.yml
+- [ ] Create .dockerignore files
+- [ ] Test container builds
+- [ ] Optimize image sizes
+- [ ] Test containerized app
+
+### Task 16.3: Production Build
+- [ ] Create production build scripts
+- [ ] Optimize backend for production
+- [ ] Build frontend for production
+- [ ] Minify and compress assets
+- [ ] Set up static file serving
+- [ ] Configure production database
+- [ ] Test production build
+
+---
+
+## PHASE 17: Final Testing & Bug Fixes
+
+### Task 17.1: System Testing
+- [ ] Perform full system test
+- [ ] Test with large datasets
+- [ ] Test concurrent users
+- [ ] Test error recovery
+- [ ] Test backup/restore
+- [ ] Test all integrations
+- [ ] Document found issues
+
+### Task 17.2: Bug Fixing
+- [ ] Fix critical bugs
+- [ ] Fix major bugs
+- [ ] Fix minor bugs
+- [ ] Fix UI/UX issues
+- [ ] Fix performance issues
+- [ ] Retest fixed issues
+- [ ] Update documentation
+
+### Task 17.3: Performance Validation
+- [ ] Benchmark API endpoints
+- [ ] Test with 1000+ documents
+- [ ] Measure response times
+- [ ] Check memory usage
+- [ ] Validate file size limits
+- [ ] Test concurrent operations
+- [ ] Document performance metrics
+
+---
+
+## PHASE 18: Release Preparation
+
+### Task 18.1: Final Checklist
+- [ ] All tests passing
+- [ ] Documentation complete
+- [ ] Security review done
+- [ ] Performance targets met
+- [ ] Error handling complete
+- [ ] Logging configured
+- [ ] Backup system tested
+
+### Task 18.2: Release Package
+- [ ] Create release notes
+- [ ] Tag version in Git
+- [ ] Create installation package
+- [ ] Prepare deployment guide
+- [ ] Create upgrade instructions
+- [ ] Package all documentation
+- [ ] Create support resources
+
+### Task 18.3: Post-Release Planning
+- [ ] Create maintenance plan
+- [ ] Set up issue tracking
+- [ ] Plan feature roadmap
+- [ ] Create feedback collection
+- [ ] Plan update schedule
+- [ ] Document known limitations
+- [ ] Prepare support documentation
+
+---
+
+## Continuous Tasks (Throughout Development)
+
+### Code Quality
+- Regular code reviews
+- Maintain consistent style
+- Refactor when needed
+- Keep dependencies updated
+- Monitor security advisories
+- Regular commits to Git
+
+### Testing
+- Test after each feature
+- Regression testing
+- Cross-browser testing
+- Performance monitoring
+- Security testing
+- User acceptance testing
+
+### Documentation
+- Update README regularly
+- Document new features
+- Keep API docs current
+- Update configuration docs
+- Maintain changelog
+- Document decisions
+
+---
+
+## Success Criteria Checklist
+
+### Functional Requirements
+- [ ] All file formats supported
+- [ ] RAG pipeline working
+- [ ] Project management functional
+- [ ] Chat history persisted
+- [ ] Source attribution working
+- [ ] Google Drive integration complete
+- [ ] Export features working
+
+### Non-Functional Requirements
+- [ ] Response time < 2 seconds
+- [ ] Support 1000+ documents
+- [ ] Handle 10+ concurrent users
+- [ ] 99% uptime locally
+- [ ] No data loss
+- [ ] Secure file handling
+- [ ] Responsive UI
+
+### Quality Metrics
+- [ ] Code coverage > 80%
+- [ ] No critical bugs
+- [ ] Documentation complete
+- [ ] All tests passing
+- [ ] Performance targets met
+- [ ] Security review passed
+- [ ] User feedback positive
+
+---
+
+## Notes for Implementation
+
+1. **Dependencies**: Always create a virtual environment and track dependencies
+2. **Version Control**: Commit after completing each task
+3. **Testing**: Test each component before moving to the next
+4. **Documentation**: Document as you build
+5. **Iteration**: Some tasks may need revisiting based on testing
+6. **Flexibility**: Adjust timeline based on complexity encountered
+7. **AI Assistance**: Use Gemini Code Assist and Claude Code for complex tasks
+8. **Code Quality**: Run linters and formatters regularly
+9. **Backup**: Regular backups of code and test data
+10. **Communication**: Document blockers and decisions made
+
+---
+
+## Emergency Rollback Plan
+
+If critical issues arise:
+1. Git revert to last stable commit
+2. Restore database from backup
+3. Clear vector store and re-index
+4. Restart all services
+5. Run smoke tests
+6. Document issue for fix
+
+---
+
+## Completion Confirmation
+
+When all tasks are complete:
+- All checkboxes marked
+- Final system test passed
+- Documentation reviewed
+- Release package created
+- Deployment successful
+- User guide published
+- Project marked complete
