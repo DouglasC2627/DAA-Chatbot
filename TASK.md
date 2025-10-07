@@ -1,15 +1,15 @@
 # TASK.md - Sequential Build Tasks for Local RAG Chatbot "DAA Chatbot"
 
 ## Prerequisites Checklist
-- [ ] Install Python 3.11 or higher
-- [ ] Install Node.js 18+ and npm
-- [ ] Install Git
-- [ ] Install Visual Studio Code
-- [ ] Install Ollama locally
-- [ ] Pull at least one Ollama model (`ollama pull llama3.2`)
-- [ ] Pull embedding model (`ollama pull nomic-embed-text`)
-- [ ] Set up GitHub repository
-- [ ] Configure VSCode with necessary extensions
+- [x] Install Python 3.11 or higher
+- [x] Install Node.js 18+ and npm
+- [x] Install Git
+- [x] Install Visual Studio Code
+- [x] Install Ollama locally
+- [x] Pull at least one Ollama model (`ollama pull llama3.2`)
+- [x] Pull embedding model (`ollama pull nomic-embed-text`)
+- [x] Set up GitHub repository
+- [x] Configure VSCode with necessary extensions
 
 ---
 
