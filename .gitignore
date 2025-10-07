@@ -1,0 +1,143 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# FastAPI / Uvicorn
+*.log
+
+# Node.js / Next.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.next/
+out/
+.vercel
+.turbo
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Storage Directories
+backend/storage/sqlite/*.db
+backend/storage/sqlite/*.db-shm
+backend/storage/sqlite/*.db-wal
+backend/storage/chroma/
+backend/storage/documents/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+# Temporary Files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Alembic
+alembic/versions/*.pyc
+
+# Testing
+.coverage
+coverage/
+*.cover
+
+# IDEs
+*.sublime-project
+*.sublime-workspace
+
+# ChromaDB
+chroma.sqlite3
+
+# Ollama (if downloaded models locally)
+models/
+
+# Backup files
+*.bak
+*.backup
+
+# User uploaded documents (keep structure, ignore contents)
+**/documents/*
+!**/documents/.gitkeep
+
+# Build artifacts
+*.wasm
+*.map
+
+# Package manager locks (optional - uncomment if you want to ignore)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
