@@ -30,13 +30,18 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # CORS Configuration
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True
     )
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS_ORIGINS string into a list"""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 
     def ensure_directories(self):
         """Create necessary directories if they don't exist"""
