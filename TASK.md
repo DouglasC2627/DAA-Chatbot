@@ -29,8 +29,8 @@ cd backend
 python -m venv venv
 source venv/bin/activate
 ```
-- [ ] Create Python virtual environment
-- [ ] Create `requirements.txt` with initial dependencies:
+- [x] Create Python virtual environment
+- [x] Create `requirements.txt` with initial dependencies:
   ```
   fastapi==0.104.1
   uvicorn[standard]==0.24.0
@@ -42,8 +42,8 @@ source venv/bin/activate
 - [x] Create `backend/api/main.py` with basic FastAPI app
 - [x] Create `backend/core/config.py` for settings management
 - [x] Create `.env` file with basic configuration
-- [ ] Test server startup: `uvicorn api.main:app --reload`
-- [ ] Verify health check endpoint works
+- [x] Test server startup: `uvicorn api.main:app --reload`
+- [x] Verify health check endpoint works
 
 ### Task 1.3: Frontend Foundation Setup
 ```bash
