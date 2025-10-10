@@ -80,18 +80,18 @@ npx create-next-app@14 . --typescript --tailwind --app
 # Backend dependencies
 pip install sqlalchemy==2.0.23 alembic==1.13.0 aiosqlite==0.19.0
 ```
-- [ ] Create `backend/models/base.py` with SQLAlchemy base
-- [ ] Create database models:
-  - [ ] `models/project.py`
-  - [ ] `models/document.py`
-  - [ ] `models/chat.py`
-  - [ ] `models/message.py`
-  - [ ] `models/user_settings.py`
-- [ ] Set up Alembic for migrations
-- [ ] Create initial migration
-- [ ] Create database initialization script
-- [ ] Test database connection and models
-- [ ] Create basic CRUD operations
+- [x] Create `backend/models/base.py` with SQLAlchemy base
+- [x] Create database models:
+  - [x] `models/project.py`
+  - [x] `models/document.py`
+  - [x] `models/chat.py`
+  - [x] `models/message.py`
+  - [x] `models/user_settings.py`
+- [x] Set up Alembic for migrations
+- [x] Create initial migration
+- [x] Create database initialization script
+- [x] Test database connection and models
+- [x] Create basic CRUD operations
 
 ### Task 2.2: Vector Store Setup
 ```bash
