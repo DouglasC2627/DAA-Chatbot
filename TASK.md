@@ -50,18 +50,18 @@ source venv/bin/activate
 cd frontend
 npx create-next-app@14 . --typescript --tailwind --app
 ```
-- [ ] Initialize Next.js project with TypeScript
-- [ ] Install additional dependencies:
+- [x] Initialize Next.js project with TypeScript
+- [x] Install additional dependencies:
   ```bash
   npm install axios zustand @tanstack/react-query
   npm install -D @types/node
   ```
-- [ ] Configure `tsconfig.json` with path aliases
-- [ ] Set up `next.config.js` with API proxy
-- [ ] Create basic folder structure in `app/`
-- [ ] Create `.env.local` with API URL
-- [ ] Test development server: `npm run dev`
-- [ ] Verify Next.js app loads
+- [x] Configure `tsconfig.json` with path aliases
+- [x] Set up `next.config.js` with API proxy
+- [x] Create basic folder structure in `app/`
+- [x] Create `.env.local` with API URL
+- [x] Test development server: `npm run dev`
+- [x] Verify Next.js app loads
 
 ### Task 1.4: Development Environment Configuration
 - [ ] Create `docker-compose.yml` for future containerization
