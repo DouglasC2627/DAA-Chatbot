@@ -120,15 +120,15 @@ pip install chromadb==0.5.23
 
 ### Task 3.1: Ollama Integration
 ```bash
-pip install ollama==0.1.7 langchain==0.1.0 langchain-community==0.0.10
+pip install ollama==0.6.0 langchain==0.1.0 langchain-community==0.0.10
 ```
-- [ ] Create `backend/core/llm.py`
-- [ ] Implement Ollama client wrapper
-- [ ] Create model listing endpoint
-- [ ] Test basic LLM inference
-- [ ] Implement streaming responses
-- [ ] Add error handling for Ollama connection
-- [ ] Create model switching functionality
+- [x] Create `backend/core/llm.py`
+- [x] Implement Ollama client wrapper
+- [x] Create model listing endpoint
+- [x] Test basic LLM inference
+- [x] Implement streaming responses
+- [x] Add error handling for Ollama connection
+- [x] Create model switching functionality
 
 ### Task 3.2: Document Processing Pipeline
 ```bash
@@ -158,7 +158,7 @@ pip install tiktoken==0.5.2
 
 ---
 
-## PHASE 4: RAG Pipeline (Days 10-12)
+## PHASE 4: RAG Pipeline
 
 ### Task 4.1: RAG Core Implementation
 - [ ] Create `backend/core/rag_pipeline.py`
