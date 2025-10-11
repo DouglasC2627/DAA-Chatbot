@@ -106,13 +106,13 @@ pip install chromadb==0.5.23
 - [x] Implement metadata filtering
 
 ### Task 2.3: File Storage System
-- [ ] Create storage directory structure
-- [ ] Implement file upload validation
-- [ ] Create document storage service
-- [ ] Add file size checking
-- [ ] Implement file type validation
-- [ ] Create file cleanup utilities
-- [ ] Test file upload/download
+- [x] Create storage directory structure
+- [x] Implement file upload validation
+- [x] Create document storage service
+- [x] Add file size checking
+- [x] Implement file type validation
+- [x] Create file cleanup utilities
+- [x] Test file upload/download
 
 ---
 
