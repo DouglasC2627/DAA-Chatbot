@@ -32,11 +32,11 @@ source venv/bin/activate
 - [x] Create Python virtual environment
 - [x] Create `requirements.txt` with initial dependencies:
   ```
-  fastapi==0.104.1
-  uvicorn[standard]==0.24.0
-  python-dotenv==1.0.0
-  pydantic==2.5.0
-  pydantic-settings==2.1.0
+  fastapi==0.115.6
+  uvicorn[standard]==0.34.0
+  python-dotenv==1.0.1
+  pydantic==2.10.6
+  pydantic-settings==2.10.1
   ```
 - [x] Install dependencies: `pip install -r requirements.txt`
 - [x] Create `backend/api/main.py` with basic FastAPI app
@@ -78,7 +78,7 @@ npx create-next-app@14 . --typescript --tailwind --app
 ### Task 2.1: Database Setup
 ```bash
 # Backend dependencies
-pip install sqlalchemy==2.0.23 alembic==1.13.0 aiosqlite==0.19.0
+pip install sqlalchemy==2.0.44 alembic==1.16.5 aiosqlite==0.21.0
 ```
 - [x] Create `backend/models/base.py` with SQLAlchemy base
 - [x] Create database models:
@@ -95,7 +95,7 @@ pip install sqlalchemy==2.0.23 alembic==1.13.0 aiosqlite==0.19.0
 
 ### Task 2.2: Vector Store Setup
 ```bash
-pip install chromadb==0.5.23
+pip install chromadb==1.1.1
 ```
 - [x] Create `backend/core/vectorstore.py`
 - [x] Initialize ChromaDB client with persistence
@@ -120,7 +120,7 @@ pip install chromadb==0.5.23
 
 ### Task 3.1: Ollama Integration
 ```bash
-pip install ollama==0.6.0 langchain==0.1.0 langchain-community==0.0.10
+pip install ollama==0.6.0 langchain==0.3.27 langchain-community==0.3.30
 ```
 - [x] Create `backend/core/llm.py`
 - [x] Implement Ollama client wrapper
@@ -132,7 +132,7 @@ pip install ollama==0.6.0 langchain==0.1.0 langchain-community==0.0.10
 
 ### Task 3.2: Document Processing Pipeline
 ```bash
-pip install pypdf==3.17.0 python-docx==1.1.0 openpyxl==3.1.2 unstructured==0.11.0
+pip install pypdf==6.1.1 python-docx==1.2.0 openpyxl==3.1.5 unstructured==0.18.15
 ```
 - [ ] Create `backend/services/document_processor.py`
 - [ ] Implement PDF processing
@@ -145,7 +145,7 @@ pip install pypdf==3.17.0 python-docx==1.1.0 openpyxl==3.1.2 unstructured==0.11.
 
 ### Task 3.3: Embeddings & Chunking
 ```bash
-pip install tiktoken==0.5.2
+pip install tiktoken==0.12.0
 ```
 - [ ] Create `backend/core/embeddings.py`
 - [ ] Implement embedding generation using Ollama
@@ -372,7 +372,7 @@ npm install react-markdown react-syntax-highlighter
 
 ### Task 10.1: Google Drive Integration - Backend
 ```bash
-pip install google-api-python-client==2.108.0 google-auth-httplib2==0.1.1 google-auth-oauthlib==1.1.0
+pip install google-api-python-client==2.184.0 google-auth-httplib2==0.2.0 google-auth-oauthlib==1.2.2
 ```
 - [ ] Create `backend/services/google_drive.py`
 - [ ] Implement OAuth2 flow
@@ -512,7 +512,7 @@ npm install @tanstack/react-virtual react-intersection-observer
 
 ### Task 14.1: Backend Testing
 ```bash
-pip install pytest==7.4.3 pytest-asyncio==0.21.1 pytest-cov==4.1.0
+pip install pytest==8.4.2 pytest-asyncio==1.2.0 pytest-cov==7.0.0
 ```
 - [ ] Write unit tests for services
 - [ ] Create integration tests for API
