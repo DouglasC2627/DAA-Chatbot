@@ -95,15 +95,15 @@ pip install sqlalchemy==2.0.23 alembic==1.13.0 aiosqlite==0.19.0
 
 ### Task 2.2: Vector Store Setup
 ```bash
-pip install chromadb==0.4.22
+pip install chromadb==0.5.23
 ```
-- [ ] Create `backend/core/vectorstore.py`
-- [ ] Initialize ChromaDB client with persistence
-- [ ] Create collection management functions
-- [ ] Implement vector storage methods
-- [ ] Test vector insertion and retrieval
-- [ ] Create collection per project logic
-- [ ] Implement metadata filtering
+- [x] Create `backend/core/vectorstore.py`
+- [x] Initialize ChromaDB client with persistence
+- [x] Create collection management functions
+- [x] Implement vector storage methods
+- [x] Test vector insertion and retrieval
+- [x] Create collection per project logic
+- [x] Implement metadata filtering
 
 ### Task 2.3: File Storage System
 - [ ] Create storage directory structure
