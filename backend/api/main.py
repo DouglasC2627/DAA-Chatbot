@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from core.config import settings
+from api.routes import llm
 
 app = FastAPI(
     title="DAA Chatbot API",
@@ -24,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(llm.router)
 
 
 class HealthResponse(BaseModel):
