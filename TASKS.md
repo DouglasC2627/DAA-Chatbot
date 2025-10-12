@@ -134,14 +134,14 @@ pip install ollama==0.6.0 langchain==0.3.27 langchain-community==0.3.30
 ```bash
 pip install pypdf==6.1.1 python-docx==1.2.0 openpyxl==3.1.5 unstructured==0.18.15
 ```
-- [ ] Create `backend/services/document_processor.py`
-- [ ] Implement PDF processing
-- [ ] Implement DOCX processing  
-- [ ] Implement TXT/MD processing
-- [ ] Implement CSV/XLSX processing
-- [ ] Create text extraction pipeline
-- [ ] Add metadata extraction
-- [ ] Test with various file formats
+- [x] Create `backend/services/document_processor.py`
+- [x] Implement PDF processing
+- [x] Implement DOCX processing
+- [x] Implement TXT/MD processing
+- [x] Implement CSV/XLSX processing
+- [x] Create text extraction pipeline
+- [x] Add metadata extraction
+- [x] Test with various file formats
 
 ### Task 3.3: Embeddings & Chunking
 ```bash
