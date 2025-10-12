@@ -147,14 +147,14 @@ pip install pypdf==6.1.1 python-docx==1.2.0 openpyxl==3.1.5 unstructured==0.18.1
 ```bash
 pip install tiktoken==0.12.0
 ```
-- [ ] Create `backend/core/embeddings.py`
-- [ ] Implement embedding generation using Ollama
-- [ ] Create `backend/core/chunking.py`
-- [ ] Implement recursive text splitter
-- [ ] Add chunk overlap logic
-- [ ] Create chunking strategies per file type
-- [ ] Test embedding generation
-- [ ] Optimize chunk sizes
+- [x] Create `backend/core/embeddings.py`
+- [x] Implement embedding generation using Ollama
+- [x] Create `backend/core/chunking.py`
+- [x] Implement recursive text splitter
+- [x] Add chunk overlap logic
+- [x] Create chunking strategies per file type
+- [x] Test embedding generation
+- [x] Optimize chunk sizes
 
 ---
 
