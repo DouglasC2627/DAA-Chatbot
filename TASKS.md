@@ -161,33 +161,33 @@ pip install tiktoken==0.12.0
 ## PHASE 4: RAG Pipeline
 
 ### Task 4.1: RAG Core Implementation
-- [ ] Create `backend/core/rag_pipeline.py`
-- [ ] Implement retrieval logic
-- [ ] Create prompt templates
-- [ ] Build context injection
-- [ ] Implement source tracking
-- [ ] Add relevance scoring
-- [ ] Create response generation
-- [ ] Test end-to-end RAG flow
+- [x] Create `backend/core/rag_pipeline.py`
+- [x] Implement retrieval logic
+- [x] Create prompt templates
+- [x] Build context injection
+- [x] Implement source tracking
+- [x] Add relevance scoring
+- [x] Create response generation
+- [x] Test end-to-end RAG flow
 
 ### Task 4.2: Chat Service
-- [ ] Create `backend/services/chat_service.py`
-- [ ] Implement conversation management
-- [ ] Add message history handling
-- [ ] Create context window management
-- [ ] Implement conversation memory
-- [ ] Add response streaming
-- [ ] Test chat functionality
+- [x] Create `backend/services/chat_service.py`
+- [x] Implement conversation management
+- [x] Add message history handling
+- [x] Create context window management
+- [x] Implement conversation memory
+- [x] Add response streaming
+- [x] Test chat functionality
 
 ### Task 4.3: API Endpoints - Core
-- [ ] Create `backend/api/routes/chat.py`
-- [ ] Implement POST `/api/chats/{id}/messages`
-- [ ] Implement GET `/api/chats/{id}`
-- [ ] Create `backend/api/routes/documents.py`
-- [ ] Implement POST `/api/projects/{id}/documents`
-- [ ] Implement document processing endpoint
-- [ ] Add error handling middleware
-- [ ] Test all endpoints with Postman/curl
+- [x] Create `backend/api/routes/chat.py`
+- [x] Implement POST `/api/chats/{id}/messages`
+- [x] Implement GET `/api/chats/{id}`
+- [x] Create `backend/api/routes/documents.py`
+- [x] Implement POST `/api/projects/{id}/documents`
+- [x] Implement document processing endpoint
+- [x] Add error handling middleware
+- [x] Test all endpoints with Postman/curl
 
 ---
 
