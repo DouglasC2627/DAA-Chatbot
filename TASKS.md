@@ -194,13 +194,16 @@ pip install tiktoken==0.12.0
 ## PHASE 5: Project Management System
 
 ### Task 5.1: Project Service Implementation
-- [ ] Create `backend/services/project_service.py`
-- [ ] Implement project CRUD operations
-- [ ] Add project-document associations
-- [ ] Create project isolation logic
-- [ ] Implement project settings management
-- [ ] Add project export functionality
-- [ ] Create project import functionality
+- [x] Create `backend/services/project_service.py`
+- [x] Implement project CRUD operations
+- [x] Add project-document associations
+- [x] Create project isolation logic
+- [x] Implement project settings management
+- [x] Add project export functionality
+- [x] Create project import functionality
+- [x] Implement project folder management (open/browse project directories)
+- [x] Create API routes for all project endpoints
+- [x] Write comprehensive tests for project service
 
 ### Task 5.2: Project API Endpoints
 - [ ] Create `backend/api/routes/projects.py`
