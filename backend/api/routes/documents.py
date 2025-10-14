@@ -3,9 +3,13 @@ Documents API routes.
 
 Endpoints:
 - POST /api/projects/{project_id}/documents - Upload and process document
+- POST /api/projects/{project_id}/documents/bulk - Bulk upload documents
 - GET /api/projects/{project_id}/documents - List documents for a project
+- GET /api/projects/{project_id}/documents/search - Search documents within project
 - GET /api/documents/{document_id} - Get document details
+- PATCH /api/documents/{document_id} - Update document metadata
 - DELETE /api/documents/{document_id} - Delete a document
+- POST /api/documents/bulk-delete - Bulk delete documents
 - GET /api/documents/{document_id}/download - Download document file
 """
 
@@ -19,13 +23,15 @@ from fastapi import (
     status,
     UploadFile,
     File,
-    BackgroundTasks
+    BackgroundTasks,
+    Query
 )
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_
 import uuid
+import asyncio
 
 from core.database import get_db
 from core.config import settings
@@ -70,6 +76,42 @@ class UploadDocumentResponse(BaseModel):
     """Response model for document upload."""
     document: DocumentResponse
     message: str
+
+
+class DocumentMetadataUpdate(BaseModel):
+    """Request model for updating document metadata."""
+    filename: Optional[str] = Field(None, min_length=1, max_length=512)
+    doc_metadata: Optional[dict] = None
+
+
+class BulkUploadResponse(BaseModel):
+    """Response model for bulk document upload."""
+    uploaded: List[DocumentResponse]
+    failed: List[dict]
+    total: int
+    successful: int
+    failed_count: int
+
+
+class BulkDeleteRequest(BaseModel):
+    """Request model for bulk document deletion."""
+    document_ids: List[int] = Field(..., min_items=1, description="List of document IDs to delete")
+
+
+class BulkDeleteResponse(BaseModel):
+    """Response model for bulk document deletion."""
+    deleted: List[int]
+    failed: List[dict]
+    total: int
+    successful: int
+    failed_count: int
+
+
+class DocumentSearchResponse(BaseModel):
+    """Response model for document search."""
+    documents: List[DocumentResponse]
+    total: int
+    query: str
 
 
 # Helper functions
@@ -267,24 +309,33 @@ async def upload_document(
                 detail=f"File size ({file_size} bytes) exceeds maximum allowed size ({settings.MAX_FILE_SIZE} bytes)"
             )
 
-        # Generate unique filename to prevent collisions
-        file_extension = Path(file.filename).suffix
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        # Save file to storage using file storage service
+        from io import BytesIO
+        file_obj = BytesIO(content)
 
-        # Save file to storage
-        file_path = await file_storage.save_file(
-            content=content,
-            filename=unique_filename,
+        relative_path, unique_filename = file_storage.save_file(
+            file_content=file_obj,
+            original_filename=file.filename,
             project_id=project_id
         )
 
-        # Create document record
+        # Full path for processing
+        file_path = file_storage.base_dir / relative_path
+
+        # Determine MIME type
+        import mimetypes
+        mime_type, _ = mimetypes.guess_type(file.filename)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+
+        # Create document record - store relative path
         document = Document(
             project_id=project_id,
             filename=file.filename,  # Original filename
-            file_path=str(file_path),  # Stored path
+            file_path=relative_path,  # Relative path for database
             file_type=doc_type,
             file_size=file_size,
+            mime_type=mime_type,
             status=DocumentStatus.PENDING
         )
 
@@ -550,3 +601,373 @@ async def download_document(
         filename=document.filename,
         media_type='application/octet-stream'
     )
+
+
+@router.patch("/documents/{document_id}", response_model=DocumentResponse)
+async def update_document_metadata(
+    document_id: int,
+    update_data: DocumentMetadataUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update document metadata.
+
+    This endpoint allows updating the document's filename and custom metadata.
+    Does not affect the physical file or embeddings.
+
+    Args:
+        document_id: Document ID
+        update_data: Fields to update
+        db: Database session
+
+    Returns:
+        Updated document details
+
+    Raises:
+        HTTPException: If document not found or update fails
+    """
+    try:
+        # Get document
+        result = await db.execute(
+            select(Document).where(Document.id == document_id)
+        )
+        document = result.scalar_one_or_none()
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document {document_id} not found"
+            )
+
+        # Update fields if provided
+        if update_data.filename is not None:
+            document.filename = update_data.filename
+
+        if update_data.doc_metadata is not None:
+            import json
+            document.doc_metadata = json.dumps(update_data.doc_metadata)
+
+        await db.commit()
+        await db.refresh(document)
+
+        logger.info(f"Updated metadata for document {document_id}")
+
+        return DocumentResponse(
+            id=document.id,
+            project_id=document.project_id,
+            filename=document.filename,
+            file_type=document.file_type.value,
+            file_size=document.file_size,
+            status=document.status.value,
+            page_count=document.page_count,
+            word_count=document.word_count,
+            chunk_count=document.chunk_count,
+            error_message=document.error_message,
+            created_at=document.created_at.isoformat(),
+            updated_at=document.updated_at.isoformat()
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to update document metadata: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update document: {str(e)}"
+        )
+
+
+@router.post("/projects/{project_id}/documents/bulk", response_model=BulkUploadResponse)
+async def bulk_upload_documents(
+    project_id: int,
+    files: List[UploadFile] = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Bulk upload multiple documents.
+
+    Upload multiple documents at once. Each document is validated and processed independently.
+    Failed uploads do not affect successful ones.
+
+    Args:
+        project_id: Project ID
+        files: List of uploaded files
+        background_tasks: Background tasks manager
+        db: Database session
+
+    Returns:
+        Results of bulk upload with successful and failed documents
+    """
+    # Verify project exists
+    result = await db.execute(
+        select(Project).where(Project.id == project_id)
+    )
+    project = result.scalar_one_or_none()
+
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project {project_id} not found"
+        )
+
+    uploaded_docs = []
+    failed_docs = []
+
+    for file in files:
+        try:
+            # Validate file type
+            try:
+                doc_type = document_processor.get_document_type(file.filename)
+            except Exception as e:
+                failed_docs.append({
+                    'filename': file.filename,
+                    'error': f"Unsupported file type: {str(e)}"
+                })
+                continue
+
+            # Read file content
+            content = await file.read()
+            file_size = len(content)
+
+            # Validate file size
+            if file_size > settings.MAX_FILE_SIZE:
+                failed_docs.append({
+                    'filename': file.filename,
+                    'error': f"File too large ({file_size} bytes, max {settings.MAX_FILE_SIZE})"
+                })
+                continue
+
+            # Save file using file storage service
+            # Convert bytes to file-like object
+            from io import BytesIO
+            file_obj = BytesIO(content)
+
+            relative_path, unique_filename = file_storage.save_file(
+                file_content=file_obj,
+                original_filename=file.filename,
+                project_id=project_id
+            )
+
+            # Full path for processing
+            file_path = file_storage.base_dir / relative_path
+
+            # Determine MIME type
+            import mimetypes
+            mime_type, _ = mimetypes.guess_type(file.filename)
+            if not mime_type:
+                mime_type = "application/octet-stream"
+
+            # Create document record - store relative path
+            document = Document(
+                project_id=project_id,
+                filename=file.filename,  # Original filename
+                file_path=relative_path,  # Relative path for database
+                file_type=doc_type,
+                file_size=file_size,
+                mime_type=mime_type,
+                status=DocumentStatus.PENDING
+            )
+
+            db.add(document)
+            await db.flush()
+
+            # Schedule background processing
+            background_tasks.add_task(
+                process_document_background,
+                document_id=document.id,
+                file_path=file_path,
+                project_id=project_id
+            )
+
+            uploaded_docs.append(DocumentResponse(
+                id=document.id,
+                project_id=document.project_id,
+                filename=document.filename,
+                file_type=document.file_type.value,
+                file_size=document.file_size,
+                status=document.status.value,
+                page_count=document.page_count,
+                word_count=document.word_count,
+                chunk_count=document.chunk_count,
+                error_message=document.error_message,
+                created_at=document.created_at.isoformat(),
+                updated_at=document.updated_at.isoformat()
+            ))
+
+            logger.info(f"Bulk upload: queued {file.filename} for processing")
+
+        except Exception as e:
+            logger.error(f"Bulk upload failed for {file.filename}: {str(e)}")
+            failed_docs.append({
+                'filename': file.filename,
+                'error': str(e)
+            })
+
+    # Commit all successful uploads
+    await db.commit()
+
+    return BulkUploadResponse(
+        uploaded=uploaded_docs,
+        failed=failed_docs,
+        total=len(files),
+        successful=len(uploaded_docs),
+        failed_count=len(failed_docs)
+    )
+
+
+@router.post("/documents/bulk-delete", response_model=BulkDeleteResponse)
+async def bulk_delete_documents(
+    delete_request: BulkDeleteRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Bulk delete multiple documents.
+
+    Delete multiple documents and their embeddings at once.
+    Failed deletions do not affect successful ones.
+
+    Args:
+        delete_request: Request containing document IDs to delete
+        db: Database session
+
+    Returns:
+        Results of bulk deletion with successful and failed deletions
+    """
+    deleted_ids = []
+    failed_deletions = []
+
+    for document_id in delete_request.document_ids:
+        try:
+            # Get document
+            result = await db.execute(
+                select(Document).where(Document.id == document_id)
+            )
+            document = result.scalar_one_or_none()
+
+            if not document:
+                failed_deletions.append({
+                    'document_id': document_id,
+                    'error': 'Document not found'
+                })
+                continue
+
+            # Delete embeddings from vector store
+            try:
+                vector_store.delete_documents(
+                    project_id=document.project_id,
+                    where={'document_id': document_id}
+                )
+            except Exception as e:
+                logger.warning(f"Failed to delete embeddings for document {document_id}: {str(e)}")
+
+            # Delete file from storage
+            if document.file_path:
+                file_path = Path(document.file_path)
+                if file_path.exists():
+                    try:
+                        file_path.unlink()
+                    except Exception as e:
+                        logger.warning(f"Failed to delete file {file_path}: {str(e)}")
+
+            # Delete document record
+            await db.delete(document)
+            deleted_ids.append(document_id)
+
+            logger.info(f"Bulk delete: deleted document {document_id}")
+
+        except Exception as e:
+            logger.error(f"Bulk delete failed for document {document_id}: {str(e)}")
+            failed_deletions.append({
+                'document_id': document_id,
+                'error': str(e)
+            })
+
+    # Commit all successful deletions
+    await db.commit()
+
+    return BulkDeleteResponse(
+        deleted=deleted_ids,
+        failed=failed_deletions,
+        total=len(delete_request.document_ids),
+        successful=len(deleted_ids),
+        failed_count=len(failed_deletions)
+    )
+
+
+@router.get("/projects/{project_id}/documents/search", response_model=DocumentSearchResponse)
+async def search_documents(
+    project_id: int,
+    q: str = Query(..., min_length=1, description="Search query"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Search documents within a project.
+
+    Search by filename or content metadata. This is a simple text-based search,
+    not semantic search.
+
+    Args:
+        project_id: Project ID
+        q: Search query
+        db: Database session
+
+    Returns:
+        List of matching documents
+    """
+    try:
+        # Build search query
+        search_pattern = f"%{q}%"
+
+        # Build OR condition for search
+        search_conditions = [Document.filename.ilike(search_pattern)]
+
+        # Only search metadata if it's not null
+        search_conditions.append(
+            and_(
+                Document.doc_metadata.isnot(None),
+                Document.doc_metadata.ilike(search_pattern)
+            )
+        )
+
+        query = select(Document).where(
+            and_(
+                Document.project_id == project_id,
+                or_(*search_conditions)
+            )
+        ).order_by(Document.created_at.desc())
+
+        result = await db.execute(query)
+        documents = result.scalars().all()
+
+        document_responses = [
+            DocumentResponse(
+                id=doc.id,
+                project_id=doc.project_id,
+                filename=doc.filename,
+                file_type=doc.file_type.value,
+                file_size=doc.file_size,
+                status=doc.status.value,
+                page_count=doc.page_count,
+                word_count=doc.word_count,
+                chunk_count=doc.chunk_count,
+                error_message=doc.error_message,
+                created_at=doc.created_at.isoformat(),
+                updated_at=doc.updated_at.isoformat()
+            )
+            for doc in documents
+        ]
+
+        return DocumentSearchResponse(
+            documents=document_responses,
+            total=len(document_responses),
+            query=q
+        )
+
+    except Exception as e:
+        logger.error(f"Document search failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Search failed: {str(e)}"
+        )

@@ -206,23 +206,23 @@ pip install tiktoken==0.12.0
 - [x] Write comprehensive tests for project service
 
 ### Task 5.2: Project API Endpoints
-- [ ] Create `backend/api/routes/projects.py`
-- [ ] Implement GET `/api/projects`
-- [ ] Implement POST `/api/projects`
-- [ ] Implement GET `/api/projects/{id}`
-- [ ] Implement PUT `/api/projects/{id}`
-- [ ] Implement DELETE `/api/projects/{id}`
-- [ ] Add project switching logic
-- [ ] Test project isolation
+- [x] Create `backend/api/routes/projects.py`
+- [x] Implement GET `/api/projects`
+- [x] Implement POST `/api/projects`
+- [x] Implement GET `/api/projects/{id}`
+- [x] Implement PUT `/api/projects/{id}`
+- [x] Implement DELETE `/api/projects/{id}`
+- [x] Add project switching logic
+- [x] Test project isolation
 
 ### Task 5.3: Document Management Enhancement
-- [ ] Link documents to projects
-- [ ] Implement document listing per project
-- [ ] Add document deletion
-- [ ] Create document metadata updates
-- [ ] Implement bulk operations
-- [ ] Add document search within project
-- [ ] Test document-project relationship
+- [x] Link documents to projects
+- [x] Implement document listing per project
+- [x] Add document deletion
+- [x] Create document metadata updates
+- [x] Implement bulk operations
+- [x] Add document search within project
+- [x] Test document-project relationship
 
 ---
 
