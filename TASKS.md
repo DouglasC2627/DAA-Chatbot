@@ -246,13 +246,13 @@ npm install lucide-react framer-motion
 ```bash
 npm install zustand @tanstack/react-query socket.io-client
 ```
-- [ ] Create `frontend/stores/chatStore.ts`
-- [ ] Create `frontend/stores/projectStore.ts`
-- [ ] Create `frontend/stores/documentStore.ts`
-- [ ] Set up React Query provider
-- [ ] Create API client wrapper
-- [ ] Implement error handling
-- [ ] Set up WebSocket client
+- [x] Create `frontend/stores/chatStore.ts`
+- [x] Create `frontend/stores/projectStore.ts`
+- [x] Create `frontend/stores/documentStore.ts`
+- [x] Set up React Query provider
+- [x] Create API client wrapper
+- [x] Implement error handling
+- [x] Set up WebSocket client
 
 ### Task 6.3: Layout & Navigation
 - [ ] Create `frontend/components/layout/Header.tsx`
