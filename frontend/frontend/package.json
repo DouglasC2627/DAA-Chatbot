@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@tanstack/react-query-devtools": "^5.90.2"
+  }
+}
