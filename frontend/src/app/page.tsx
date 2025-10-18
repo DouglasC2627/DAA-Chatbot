@@ -1,7 +1,14 @@
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Folder, FileText, MessageSquare, Zap } from 'lucide-react';
+import {
+  LaptopMinimalCheck,
+  FileText,
+  Zap,
+  Folder,
+  ChevronsLeftRightEllipsis,
+  Slack,
+} from 'lucide-react';
 
 export default function Home() {
   return (
@@ -30,7 +37,7 @@ export default function Home() {
         <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader>
-              <Zap className="h-8 w-8 mb-2 text-primary" />
+              <LaptopMinimalCheck className="h-8 w-8 mb-2 text-primary" />
               <CardTitle>Fully Local</CardTitle>
               <CardDescription>
                 All processing happens on your machine. No data leaves your computer.
@@ -60,7 +67,7 @@ export default function Home() {
 
           <Card>
             <CardHeader>
-              <MessageSquare className="h-8 w-8 mb-2 text-primary" />
+              <Zap className="h-8 w-8 mb-2 text-primary" />
               <CardTitle>Smart RAG Pipeline</CardTitle>
               <CardDescription>
                 Retrieval-Augmented Generation for accurate, context-aware responses.
@@ -90,7 +97,7 @@ export default function Home() {
 
           <Card>
             <CardHeader>
-              <MessageSquare className="h-8 w-8 mb-2 text-primary" />
+              <ChevronsLeftRightEllipsis className="h-8 w-8 mb-2 text-primary" />
               <CardTitle>Real-time Streaming</CardTitle>
               <CardDescription>
                 Get responses as they're generated with WebSocket streaming.
@@ -105,7 +112,7 @@ export default function Home() {
 
           <Card>
             <CardHeader>
-              <Zap className="h-8 w-8 mb-2 text-primary" />
+              <Slack className="h-8 w-8 mb-2 text-primary" />
               <CardTitle>Modern UI</CardTitle>
               <CardDescription>
                 Beautiful, responsive interface built with Next.js and shadcn/ui.
