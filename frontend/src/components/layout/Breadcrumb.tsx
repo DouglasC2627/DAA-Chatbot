@@ -31,7 +31,7 @@ export default function Breadcrumb() {
       // Skip dynamic route segments like [id]
       if (segment.startsWith('[')) return;
 
-      let label = segment.charAt(0).toUpperCase() + segment.slice(1);
+      const label = segment.charAt(0).toUpperCase() + segment.slice(1);
 
       // Special handling for known routes
       if (segment === 'projects' && currentProject && index === paths.length - 1) {
@@ -72,9 +72,7 @@ export default function Breadcrumb() {
 
         return (
           <Fragment key={item.href}>
-            {index > 0 && (
-              <ChevronRight className="h-4 w-4 flex-shrink-0" />
-            )}
+            {index > 0 && <ChevronRight className="h-4 w-4 flex-shrink-0" />}
             {isLast ? (
               <span className="flex items-center gap-1 font-medium text-foreground">
                 {item.icon}

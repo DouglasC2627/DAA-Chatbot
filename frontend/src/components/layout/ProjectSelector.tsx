@@ -25,10 +25,7 @@ export default function ProjectSelector() {
   }
 
   return (
-    <Select
-      value={currentProject?.id || ''}
-      onValueChange={(value) => setCurrentProject(value)}
-    >
+    <Select value={currentProject?.id || ''} onValueChange={(value) => setCurrentProject(value)}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Select a project">
           {currentProject ? (
