@@ -131,9 +131,9 @@ models/
 *.bak
 *.backup
 
-# User uploaded documents (keep structure, ignore contents)
-**/documents/*
-!**/documents/.gitkeep
+# User uploaded documents (backend only)
+# backend/storage/documents/ is already ignored above (line 85)
+# Frontend documents folder is tracked in git
 
 # Build artifacts
 *.wasm
