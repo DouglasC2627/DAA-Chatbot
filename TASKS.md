@@ -255,13 +255,13 @@ npm install zustand @tanstack/react-query socket.io-client
 - [x] Set up WebSocket client
 
 ### Task 6.3: Layout & Navigation
-- [ ] Create `frontend/components/layout/Header.tsx`
-- [ ] Create `frontend/components/layout/Sidebar.tsx`
-- [ ] Create `frontend/components/layout/Footer.tsx`
-- [ ] Implement responsive navigation
-- [ ] Add project switcher
-- [ ] Create breadcrumb navigation
-- [ ] Test responsive design
+- [x] Create `frontend/components/layout/Header.tsx`
+- [x] Create `frontend/components/layout/Sidebar.tsx`
+- [x] Create `frontend/components/layout/Footer.tsx`
+- [x] Implement responsive navigation
+- [x] Add project switcher
+- [x] Create breadcrumb navigation
+- [x] Test responsive design
 
 ---
 
