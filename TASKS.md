@@ -268,37 +268,37 @@ npm install zustand @tanstack/react-query socket.io-client
 ## PHASE 7: Frontend Core Features
 
 ### Task 7.1: Project Management UI
-- [ ] Create `frontend/app/projects/page.tsx`
-- [ ] Create `frontend/components/projects/ProjectList.tsx`
-- [ ] Create `frontend/components/projects/ProjectCreate.tsx`
-- [ ] Create `frontend/components/projects/ProjectCard.tsx`
-- [ ] Implement project CRUD UI
-- [ ] Add project settings modal
-- [ ] Create project deletion confirmation
-- [ ] Test project management flow
+- [x] Create `frontend/app/projects/page.tsx`
+- [x] Create `frontend/components/projects/ProjectList.tsx`
+- [x] Create `frontend/components/projects/ProjectCreate.tsx`
+- [x] Create `frontend/components/projects/ProjectCard.tsx`
+- [x] Implement project CRUD UI
+- [x] Add project settings modal
+- [x] Create project deletion confirmation
+- [x] Test project management flow
 
 ### Task 7.2: Document Management UI
 ```bash
 npm install react-dropzone
 ```
-- [ ] Create `frontend/components/documents/DocumentUpload.tsx`
-- [ ] Create `frontend/components/documents/DocumentList.tsx`
-- [ ] Create `frontend/components/documents/DocumentCard.tsx`
-- [ ] Implement drag-and-drop upload
-- [ ] Add upload progress indicators
-- [ ] Create document preview
-- [ ] Implement bulk upload
-- [ ] Test file upload with various formats
+- [x] Create `frontend/components/documents/DocumentUpload.tsx`
+- [x] Create `frontend/components/documents/DocumentList.tsx`
+- [x] Create `frontend/components/documents/DocumentCard.tsx`
+- [x] Implement drag-and-drop upload
+- [x] Add upload progress indicators
+- [x] Create document preview
+- [x] Implement bulk upload
+- [x] Test file upload with various formats
 
 ### Task 7.3: Chat Interface Foundation
-- [ ] Create `frontend/app/chat/[projectId]/page.tsx`
-- [ ] Create `frontend/components/chat/ChatInterface.tsx`
-- [ ] Create `frontend/components/chat/MessageList.tsx`
-- [ ] Create `frontend/components/chat/MessageInput.tsx`
-- [ ] Create `frontend/components/chat/Message.tsx`
-- [ ] Implement basic message display
-- [ ] Add message input handling
-- [ ] Test basic chat UI
+- [x] Create `frontend/app/chat/[projectId]/page.tsx`
+- [x] Create `frontend/components/chat/ChatInterface.tsx`
+- [x] Create `frontend/components/chat/MessageList.tsx`
+- [x] Create `frontend/components/chat/MessageInput.tsx`
+- [x] Create `frontend/components/chat/Message.tsx`
+- [x] Implement basic message display
+- [x] Add message input handling
+- [x] Test basic chat UI
 
 ---
 
