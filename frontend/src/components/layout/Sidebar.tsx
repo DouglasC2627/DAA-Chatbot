@@ -1,10 +1,11 @@
-'use client'
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Folder, FileText, MessageSquare, Settings, Plus, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ProjectSelector from './ProjectSelector';
 
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
@@ -20,11 +21,16 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-16 z-30 hidden h-[calc(100vh-4rem)] w-64 border-r bg-background md:block">
       <div className="flex h-full flex-col gap-4 p-4">
-        <Button className="w-full" size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          New Project
-        </Button>
+        {/* Project Selector */}
+        <div className="space-y-2">
+          <ProjectSelector />
+          <Button className="w-full" size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            New Project
+          </Button>
+        </div>
 
+        {/* Navigation Menu */}
         <nav className="flex flex-1 flex-col gap-1">
           {navigation.map((item) => {
             const Icon = item.icon;
@@ -48,6 +54,7 @@ export default function Sidebar() {
           })}
         </nav>
 
+        {/* Footer Info */}
         <div className="border-t pt-4">
           <div className="text-xs text-muted-foreground">
             <p className="font-medium">DAA Chatbot</p>
