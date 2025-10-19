@@ -22,9 +22,9 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Running the server
-uvicorn api.main:app --reload  # Development mode with hot reload
-uvicorn api.main:app --host 0.0.0.0 --port 8000  # Production mode
+# Running the server (with WebSocket support)
+uvicorn api.main:socket_app --reload  # Development mode with hot reload
+uvicorn api.main:socket_app --host 0.0.0.0 --port 8000  # Production mode
 
 # Database migrations
 alembic revision --autogenerate -m "description"
@@ -86,10 +86,11 @@ ollama run llama3.2 "Hello"
 ```
 backend/
 ├── api/
-│   ├── main.py              # FastAPI app entry point
+│   ├── main.py              # FastAPI app entry point with Socket.IO integration
 │   ├── routes/              # API endpoints (chat, documents, projects, auth, integrations)
 │   ├── middleware/          # CORS, auth, rate limiting
-│   └── websocket/           # WebSocket handlers for streaming
+│   └── websocket/
+│       └── chat_ws.py       # WebSocket handlers for real-time chat streaming
 ├── core/
 │   ├── config.py            # Settings and configuration
 │   ├── llm.py               # Ollama client wrapper

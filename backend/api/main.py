@@ -4,12 +4,14 @@ from pydantic import BaseModel
 from typing import Dict
 import sys
 from pathlib import Path
+import socketio
 
 # Add parent directory to path to import from core
 sys.path.append(str(Path(__file__).parent.parent))
 
 from core.config import settings
 from api.routes import llm, chat, documents, projects
+from api.websocket.chat_ws import sio
 
 app = FastAPI(
     title="DAA Chatbot API",
@@ -65,6 +67,21 @@ async def api_health() -> Dict[str, str]:
     }
 
 
+# Create combined ASGI application with Socket.IO
+# This wraps the FastAPI app with Socket.IO support
+socket_app = socketio.ASGIApp(
+    socketio_server=sio,
+    other_asgi_app=app,
+    socketio_path='/socket.io'
+)
+
+# Export socket_app as the main application for uvicorn
+# Use: uvicorn api.main:socket_app --reload
+# This ensures both FastAPI routes and WebSocket work together
+application = socket_app
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Run the combined Socket.IO + FastAPI application
+    uvicorn.run(socket_app, host="0.0.0.0", port=8000)

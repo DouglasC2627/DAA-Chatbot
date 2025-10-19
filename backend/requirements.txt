@@ -30,6 +30,9 @@ unstructured==0.18.15
 # Embeddings & Chunking
 tiktoken==0.12.0
 
+# WebSocket & Real-time
+python-socketio==5.14.2
+
 # Development Tools
 black==23.12.1
 pylint==3.0.3
