@@ -42,6 +42,7 @@ from models.document import Document, DocumentType, DocumentStatus
 from models.project import Project
 from services.document_processor import DocumentProcessor, DocumentProcessingError
 from services.file_storage import FileStorageService
+from api.websocket.chat_ws import notify_document_processing
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +157,9 @@ async def process_document_background(
             document.status = DocumentStatus.PROCESSING
             await db.commit()
 
+            # Notify via WebSocket
+            await notify_document_processing(project_id, document_id, 'processing', 0)
+
             try:
                 # Extract text from document
                 with open(file_path, 'rb') as f:
@@ -175,6 +179,9 @@ async def process_document_background(
                 document.chunk_count = len(chunks)
                 logger.info(f"Document {document_id} split into {len(chunks)} chunks")
 
+                # Notify progress
+                await notify_document_processing(project_id, document_id, 'processing', 30)
+
                 # Generate embeddings for chunks
                 chunk_texts = [chunk['text'] for chunk in chunks]
                 embeddings = embedding_service.generate_embeddings_batch(
@@ -193,6 +200,9 @@ async def process_document_background(
                     raise DocumentProcessingError("No valid embeddings generated")
 
                 valid_texts, valid_embeddings, valid_chunks = zip(*valid_data)
+
+                # Notify progress after embeddings
+                await notify_document_processing(project_id, document_id, 'processing', 60)
 
                 # Prepare metadata for vector store
                 metadatas = [
@@ -228,6 +238,9 @@ async def process_document_background(
                 document.status = DocumentStatus.COMPLETED
                 await db.commit()
 
+                # Notify completion via WebSocket
+                await notify_document_processing(project_id, document_id, 'completed', 100)
+
                 logger.info(
                     f"Successfully processed document {document_id}: "
                     f"{len(chunks)} chunks, {document.word_count} words"
@@ -240,6 +253,9 @@ async def process_document_background(
                 document.status = DocumentStatus.FAILED
                 document.error_message = str(e)
                 await db.commit()
+
+                # Notify failure via WebSocket
+                await notify_document_processing(project_id, document_id, 'failed', 0)
 
     except Exception as e:
         logger.error(f"Background processing error for document {document_id}: {str(e)}")

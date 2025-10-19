@@ -159,7 +159,7 @@ export const documentApi = {
     });
 
     const response = await apiClient.post<APIResponse<BulkDocumentUploadResponse>>(
-      `/api/projects/${projectId}/documents`,
+      `/api/projects/${projectId}/documents/bulk`,
       formData,
       {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -333,9 +333,8 @@ export const systemApi = {
 
   // Health check
   healthCheck: async (): Promise<{ status: string; timestamp: string }> => {
-    const response = await apiClient.get<
-      APIResponse<{ status: string; timestamp: string }>
-    >('/api/health');
+    const response =
+      await apiClient.get<APIResponse<{ status: string; timestamp: string }>>('/api/health');
     if (!response.data.data) {
       throw new Error('Health check failed');
     }

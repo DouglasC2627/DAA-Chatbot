@@ -47,7 +47,12 @@ export interface ErrorEvent {
   chat_id?: number;
 }
 
-export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'reconnecting' | 'error';
+export type ConnectionStatus =
+  | 'connected'
+  | 'disconnected'
+  | 'connecting'
+  | 'reconnecting'
+  | 'error';
 
 // ============================================================================
 // WebSocket Configuration
@@ -417,10 +422,12 @@ export default wsClient;
 /**
  * Hook for WebSocket connection management
  */
-export function useWebSocketConnection(options: {
-  autoConnect?: boolean;
-  auth?: { token?: string };
-} = {}) {
+export function useWebSocketConnection(
+  options: {
+    autoConnect?: boolean;
+    auth?: { token?: string };
+  } = {}
+) {
   const { autoConnect = true, auth } = options;
   const [status, setStatus] = useState<ConnectionStatus>(wsClient.getStatus());
 
@@ -469,12 +476,15 @@ export function useProjectRoom(projectId: number | null) {
 /**
  * Hook for streaming chat messages
  */
-export function useChatStream(chatId: number, options: {
-  onToken?: (token: string) => void;
-  onSources?: (sources: SourceDocument[]) => void;
-  onComplete?: (metadata: { model: string; sources_count: number }) => void;
-  onError?: (error: string) => void;
-} = {}) {
+export function useChatStream(
+  chatId: number,
+  options: {
+    onToken?: (token: string) => void;
+    onSources?: (sources: SourceDocument[]) => void;
+    onComplete?: (metadata: { model: string; sources_count: number }) => void;
+    onError?: (error: string) => void;
+  } = {}
+) {
   const { onToken, onSources, onComplete, onError } = options;
 
   useEffect(() => {
@@ -511,7 +521,10 @@ export function useChatStream(chatId: number, options: {
   }, [chatId, onToken, onSources, onComplete, onError]);
 
   const sendMessage = useCallback(
-    (message: string, options?: { model?: string; temperature?: number; include_history?: boolean }) => {
+    (
+      message: string,
+      options?: { model?: string; temperature?: number; include_history?: boolean }
+    ) => {
       wsClient.sendMessage({
         chat_id: chatId,
         message,
