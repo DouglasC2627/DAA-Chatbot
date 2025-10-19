@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Folder, FileText, MessageSquare, Settings, Trash2, MoreVertical } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format, differenceInSeconds } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +41,11 @@ export default function ProjectCard({ project, onSelect, onEdit, onDelete }: Pro
     e.stopPropagation();
     onDelete?.(project);
   };
+
+  // Calculate if project has been updated since creation (more than 1 minute difference)
+  const createdDate = new Date(project.created_at);
+  const updatedDate = new Date(project.updated_at);
+  const hasBeenUpdated = differenceInSeconds(updatedDate, createdDate) > 60;
 
   return (
     <Card
@@ -91,12 +96,14 @@ export default function ProjectCard({ project, onSelect, onEdit, onDelete }: Pro
       </CardContent>
       <CardFooter className="pt-3 border-t">
         <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
-          <span>
-            Created {formatDistanceToNow(new Date(project.created_at), { addSuffix: true })}
+          <span title={format(createdDate, 'PPpp')}>
+            Created {formatDistanceToNow(createdDate, { addSuffix: true })}
           </span>
-          <span>
-            Updated {formatDistanceToNow(new Date(project.updated_at), { addSuffix: true })}
-          </span>
+          {hasBeenUpdated && (
+            <span title={format(updatedDate, 'PPpp')}>
+              Updated {formatDistanceToNow(updatedDate, { addSuffix: true })}
+            </span>
+          )}
         </div>
       </CardFooter>
     </Card>
