@@ -1,21 +1,59 @@
-// WebSocket Client for Real-time Communication
+// WebSocket Client for Real-time Communication with Socket.IO
 import { io, Socket } from 'socket.io-client';
-import {
-  WSMessage,
-  WSMessageType,
-  MessageChunkData,
-  ProcessingUpdateData,
-} from '@/types';
+import { useEffect, useState, useCallback } from 'react';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface SourceDocument {
+  id: string;
+  content: string;
+  metadata: Record<string, any>;
+  score: number;
+}
+
+export interface MessageTokenEvent {
+  chat_id: number;
+  token: string;
+}
+
+export interface MessageSourcesEvent {
+  chat_id: number;
+  sources: SourceDocument[];
+}
+
+export interface MessageCompleteEvent {
+  chat_id: number;
+  metadata: {
+    model: string;
+    sources_count: number;
+  };
+}
+
+export interface DocumentStatusEvent {
+  document_id: number;
+  status: 'processing' | 'completed' | 'failed';
+  progress?: number;
+}
+
+export interface ProjectUpdateEvent {
+  type: string;
+  data: Record<string, any>;
+}
+
+export interface ErrorEvent {
+  message: string;
+  chat_id?: number;
+}
+
+export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'reconnecting' | 'error';
 
 // ============================================================================
 // WebSocket Configuration
 // ============================================================================
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
-
-type MessageHandler = (data: unknown) => void;
-type ErrorHandler = (error: Error) => void;
-type ConnectionHandler = () => void;
+const WS_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // ============================================================================
 // WebSocket Client Class
@@ -27,27 +65,23 @@ class WebSocketClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
-  private messageHandlers: Map<WSMessageType, MessageHandler[]> = new Map();
-  private errorHandlers: ErrorHandler[] = [];
-  private connectionHandlers: ConnectionHandler[] = [];
-  private disconnectionHandlers: ConnectionHandler[] = [];
+  private currentProjectId: number | null = null;
+  private connectionStatus: ConnectionStatus = 'disconnected';
 
-  constructor() {
-    this.initializeHandlers();
-  }
-
-  private initializeHandlers(): void {
-    // Initialize handler arrays for each message type
-    Object.values(WSMessageType).forEach((type) => {
-      this.messageHandlers.set(type as WSMessageType, []);
-    });
-  }
+  // Event handlers
+  private statusChangeHandlers: ((status: ConnectionStatus) => void)[] = [];
+  private messageTokenHandlers: ((data: MessageTokenEvent) => void)[] = [];
+  private messageSourcesHandlers: ((data: MessageSourcesEvent) => void)[] = [];
+  private messageCompleteHandlers: ((data: MessageCompleteEvent) => void)[] = [];
+  private documentStatusHandlers: ((data: DocumentStatusEvent) => void)[] = [];
+  private projectUpdateHandlers: ((data: ProjectUpdateEvent) => void)[] = [];
+  private errorHandlers: ((data: ErrorEvent) => void)[] = [];
 
   // ============================================================================
   // Connection Management
   // ============================================================================
 
-  connect(chatId?: string): Promise<void> {
+  connect(auth?: { token?: string }): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.socket?.connected) {
         resolve();
@@ -60,24 +94,16 @@ class WebSocketClient {
       }
 
       this.isConnecting = true;
-
-      const token = localStorage.getItem('auth_token');
-      const query: Record<string, string> = {};
-
-      if (token) {
-        query.token = token;
-      }
-
-      if (chatId) {
-        query.chat_id = chatId;
-      }
+      this.updateStatus('connecting');
 
       this.socket = io(WS_URL, {
+        path: '/socket.io',
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: this.maxReconnectAttempts,
         reconnectionDelay: this.reconnectDelay,
-        auth: query,
+        reconnectionDelayMax: 5000,
+        auth: auth || {},
       });
 
       this.setupSocketListeners();
@@ -85,19 +111,23 @@ class WebSocketClient {
       this.socket.on('connect', () => {
         this.isConnecting = false;
         this.reconnectAttempts = 0;
-        this.connectionHandlers.forEach((handler) => handler());
+        this.updateStatus('connected');
+        console.log('[WebSocket] Connected:', this.socket?.id);
         resolve();
       });
 
       this.socket.on('connect_error', (error: Error) => {
+        console.error('[WebSocket] Connection error:', error);
         this.isConnecting = false;
         this.reconnectAttempts++;
 
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-          this.errorHandlers.forEach((handler) =>
-            handler(new Error(`Failed to connect after ${this.maxReconnectAttempts} attempts`))
-          );
-          reject(error);
+          this.updateStatus('error');
+          const errorMessage = `Failed to connect after ${this.maxReconnectAttempts} attempts`;
+          this.errorHandlers.forEach((handler) => handler({ message: errorMessage }));
+          reject(new Error(errorMessage));
+        } else {
+          this.updateStatus('reconnecting');
         }
       });
 
@@ -105,6 +135,7 @@ class WebSocketClient {
       setTimeout(() => {
         if (this.isConnecting) {
           this.isConnecting = false;
+          this.updateStatus('error');
           reject(new Error('Connection timeout'));
         }
       }, 10000);
@@ -113,15 +144,32 @@ class WebSocketClient {
 
   disconnect(): void {
     if (this.socket) {
+      // Leave current project if joined
+      if (this.currentProjectId !== null) {
+        this.leaveProject(this.currentProjectId);
+      }
+
       this.socket.disconnect();
       this.socket = null;
       this.isConnecting = false;
       this.reconnectAttempts = 0;
+      this.currentProjectId = null;
+      this.updateStatus('disconnected');
+      console.log('[WebSocket] Disconnected');
     }
   }
 
   isConnected(): boolean {
     return this.socket?.connected || false;
+  }
+
+  getStatus(): ConnectionStatus {
+    return this.connectionStatus;
+  }
+
+  private updateStatus(status: ConnectionStatus): void {
+    this.connectionStatus = status;
+    this.statusChangeHandlers.forEach((handler) => handler(status));
   }
 
   // ============================================================================
@@ -131,90 +179,219 @@ class WebSocketClient {
   private setupSocketListeners(): void {
     if (!this.socket) return;
 
-    // Handle incoming messages
-    this.socket.on('message', (message: WSMessage) => {
-      this.handleMessage(message);
+    // Connection status
+    this.socket.on('connection_status', (data: { status: string }) => {
+      console.log('[WebSocket] Connection status:', data.status);
     });
 
-    // Handle specific message types
-    this.socket.on('message_chunk', (data: MessageChunkData) => {
-      this.handleMessage({ type: WSMessageType.MESSAGE_CHUNK, data });
+    // Message streaming events
+    this.socket.on('message_received', (data: { chat_id: number; status: string }) => {
+      console.log('[WebSocket] Message received:', data);
     });
 
-    this.socket.on('message_end', (data: MessageChunkData) => {
-      this.handleMessage({ type: WSMessageType.MESSAGE_END, data });
+    this.socket.on('message_sources', (data: MessageSourcesEvent) => {
+      console.log('[WebSocket] Message sources:', data);
+      this.messageSourcesHandlers.forEach((handler) => handler(data));
     });
 
-    this.socket.on('message_error', (error: { message: string }) => {
-      this.handleMessage({ type: WSMessageType.MESSAGE_ERROR, data: error });
+    this.socket.on('message_token', (data: MessageTokenEvent) => {
+      this.messageTokenHandlers.forEach((handler) => handler(data));
     });
 
-    this.socket.on('processing_update', (data: ProcessingUpdateData) => {
-      this.handleMessage({ type: WSMessageType.PROCESSING_UPDATE, data });
+    this.socket.on('message_complete', (data: MessageCompleteEvent) => {
+      console.log('[WebSocket] Message complete:', data);
+      this.messageCompleteHandlers.forEach((handler) => handler(data));
     });
 
-    this.socket.on('connection_ack', (data: unknown) => {
-      this.handleMessage({ type: WSMessageType.CONNECTION_ACK, data });
+    // Project room events
+    this.socket.on('project_joined', (data: { project_id: number; status: string }) => {
+      console.log('[WebSocket] Joined project:', data.project_id);
+      this.currentProjectId = data.project_id;
     });
 
-    // Handle disconnection
+    this.socket.on('project_left', (data: { project_id: number; status: string }) => {
+      console.log('[WebSocket] Left project:', data.project_id);
+      this.currentProjectId = null;
+    });
+
+    // Real-time updates
+    this.socket.on('document_status', (data: DocumentStatusEvent) => {
+      console.log('[WebSocket] Document status:', data);
+      this.documentStatusHandlers.forEach((handler) => handler(data));
+    });
+
+    this.socket.on('project_update', (data: ProjectUpdateEvent) => {
+      console.log('[WebSocket] Project update:', data);
+      this.projectUpdateHandlers.forEach((handler) => handler(data));
+    });
+
+    // Ping/pong for health check
+    this.socket.on('pong', (data: { timestamp: number }) => {
+      const latency = Date.now() - data.timestamp;
+      console.log('[WebSocket] Pong received, latency:', latency, 'ms');
+    });
+
+    // Error handling
+    this.socket.on('error', (data: ErrorEvent) => {
+      console.error('[WebSocket] Error:', data.message);
+      this.errorHandlers.forEach((handler) => handler(data));
+    });
+
+    // Disconnection
     this.socket.on('disconnect', (reason: string) => {
-      console.log('WebSocket disconnected:', reason);
-      this.disconnectionHandlers.forEach((handler) => handler());
+      console.log('[WebSocket] Disconnected:', reason);
+      this.updateStatus('disconnected');
+
+      if (reason === 'io server disconnect') {
+        // Server initiated disconnect, reconnect manually
+        this.connect();
+      }
     });
 
-    // Handle errors
-    this.socket.on('error', (error: Error) => {
-      console.error('WebSocket error:', error);
-      this.errorHandlers.forEach((handler) =>
-        handler(error instanceof Error ? error : new Error(String(error)))
-      );
+    // Reconnection events
+    this.socket.on('reconnect_attempt', (attemptNumber: number) => {
+      console.log('[WebSocket] Reconnect attempt:', attemptNumber);
+      this.updateStatus('reconnecting');
+    });
+
+    this.socket.on('reconnect', (attemptNumber: number) => {
+      console.log('[WebSocket] Reconnected after', attemptNumber, 'attempts');
+      this.reconnectAttempts = 0;
+      this.updateStatus('connected');
+
+      // Rejoin project if we were in one
+      if (this.currentProjectId !== null) {
+        this.joinProject(this.currentProjectId);
+      }
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('[WebSocket] Reconnection failed');
+      this.updateStatus('error');
     });
   }
 
-  private handleMessage(message: WSMessage): void {
-    const handlers = this.messageHandlers.get(message.type);
-    if (handlers) {
-      handlers.forEach((handler) => handler(message.data));
+  // ============================================================================
+  // Project Room Management
+  // ============================================================================
+
+  joinProject(projectId: number): void {
+    if (!this.socket?.connected) {
+      console.warn('[WebSocket] Cannot join project: not connected');
+      return;
     }
+
+    console.log('[WebSocket] Joining project:', projectId);
+    this.socket.emit('join_project', { project_id: projectId });
+  }
+
+  leaveProject(projectId: number): void {
+    if (!this.socket?.connected) {
+      console.warn('[WebSocket] Cannot leave project: not connected');
+      return;
+    }
+
+    console.log('[WebSocket] Leaving project:', projectId);
+    this.socket.emit('leave_project', { project_id: projectId });
+    this.currentProjectId = null;
   }
 
   // ============================================================================
   // Message Sending
   // ============================================================================
 
-  send(event: string, data: unknown): void {
+  sendMessage(data: {
+    chat_id: number;
+    message: string;
+    model?: string;
+    temperature?: number;
+    include_history?: boolean;
+  }): void {
     if (!this.socket?.connected) {
       throw new Error('WebSocket not connected');
     }
-    this.socket.emit(event, data);
+
+    console.log('[WebSocket] Sending message:', data);
+    this.socket.emit('send_message', data);
   }
 
-  sendMessage(chatId: string, content: string): void {
-    this.send('send_message', { chat_id: chatId, content });
+  ping(): void {
+    if (!this.socket?.connected) {
+      console.warn('[WebSocket] Cannot ping: not connected');
+      return;
+    }
+
+    this.socket.emit('ping', {});
   }
 
   // ============================================================================
   // Event Handler Registration
   // ============================================================================
 
-  on(messageType: WSMessageType, handler: MessageHandler): () => void {
-    const handlers = this.messageHandlers.get(messageType) || [];
-    handlers.push(handler);
-    this.messageHandlers.set(messageType, handlers);
+  onStatusChange(handler: (status: ConnectionStatus) => void): () => void {
+    this.statusChangeHandlers.push(handler);
+    // Immediately call with current status
+    handler(this.connectionStatus);
 
-    // Return unsubscribe function
     return () => {
-      const currentHandlers = this.messageHandlers.get(messageType) || [];
-      const index = currentHandlers.indexOf(handler);
+      const index = this.statusChangeHandlers.indexOf(handler);
       if (index > -1) {
-        currentHandlers.splice(index, 1);
-        this.messageHandlers.set(messageType, currentHandlers);
+        this.statusChangeHandlers.splice(index, 1);
       }
     };
   }
 
-  onError(handler: ErrorHandler): () => void {
+  onMessageToken(handler: (data: MessageTokenEvent) => void): () => void {
+    this.messageTokenHandlers.push(handler);
+    return () => {
+      const index = this.messageTokenHandlers.indexOf(handler);
+      if (index > -1) {
+        this.messageTokenHandlers.splice(index, 1);
+      }
+    };
+  }
+
+  onMessageSources(handler: (data: MessageSourcesEvent) => void): () => void {
+    this.messageSourcesHandlers.push(handler);
+    return () => {
+      const index = this.messageSourcesHandlers.indexOf(handler);
+      if (index > -1) {
+        this.messageSourcesHandlers.splice(index, 1);
+      }
+    };
+  }
+
+  onMessageComplete(handler: (data: MessageCompleteEvent) => void): () => void {
+    this.messageCompleteHandlers.push(handler);
+    return () => {
+      const index = this.messageCompleteHandlers.indexOf(handler);
+      if (index > -1) {
+        this.messageCompleteHandlers.splice(index, 1);
+      }
+    };
+  }
+
+  onDocumentStatus(handler: (data: DocumentStatusEvent) => void): () => void {
+    this.documentStatusHandlers.push(handler);
+    return () => {
+      const index = this.documentStatusHandlers.indexOf(handler);
+      if (index > -1) {
+        this.documentStatusHandlers.splice(index, 1);
+      }
+    };
+  }
+
+  onProjectUpdate(handler: (data: ProjectUpdateEvent) => void): () => void {
+    this.projectUpdateHandlers.push(handler);
+    return () => {
+      const index = this.projectUpdateHandlers.indexOf(handler);
+      if (index > -1) {
+        this.projectUpdateHandlers.splice(index, 1);
+      }
+    };
+  }
+
+  onError(handler: (data: ErrorEvent) => void): () => void {
     this.errorHandlers.push(handler);
     return () => {
       const index = this.errorHandlers.indexOf(handler);
@@ -222,49 +399,6 @@ class WebSocketClient {
         this.errorHandlers.splice(index, 1);
       }
     };
-  }
-
-  onConnect(handler: ConnectionHandler): () => void {
-    this.connectionHandlers.push(handler);
-    return () => {
-      const index = this.connectionHandlers.indexOf(handler);
-      if (index > -1) {
-        this.connectionHandlers.splice(index, 1);
-      }
-    };
-  }
-
-  onDisconnect(handler: ConnectionHandler): () => void {
-    this.disconnectionHandlers.push(handler);
-    return () => {
-      const index = this.disconnectionHandlers.indexOf(handler);
-      if (index > -1) {
-        this.disconnectionHandlers.splice(index, 1);
-      }
-    };
-  }
-
-  // ============================================================================
-  // Utility Methods
-  // ============================================================================
-
-  off(messageType: WSMessageType, handler: MessageHandler): void {
-    const handlers = this.messageHandlers.get(messageType);
-    if (handlers) {
-      const index = handlers.indexOf(handler);
-      if (index > -1) {
-        handlers.splice(index, 1);
-      }
-    }
-  }
-
-  removeAllListeners(messageType?: WSMessageType): void {
-    if (messageType) {
-      this.messageHandlers.set(messageType, []);
-    } else {
-      this.messageHandlers.clear();
-      this.initializeHandlers();
-    }
   }
 }
 
@@ -277,79 +411,139 @@ const wsClient = new WebSocketClient();
 export default wsClient;
 
 // ============================================================================
-// React Hook for WebSocket
+// React Hooks for WebSocket
 // ============================================================================
 
-import { useEffect, useRef } from 'react';
-
-interface UseWebSocketOptions {
-  chatId?: string;
+/**
+ * Hook for WebSocket connection management
+ */
+export function useWebSocketConnection(options: {
   autoConnect?: boolean;
-  onMessage?: (type: WSMessageType, data: unknown) => void;
-  onError?: (error: Error) => void;
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-}
-
-export function useWebSocket(options: UseWebSocketOptions = {}) {
-  const {
-    chatId,
-    autoConnect = true,
-    onMessage,
-    onError,
-    onConnect,
-    onDisconnect,
-  } = options;
-
-  const unsubscribersRef = useRef<(() => void)[]>([]);
+  auth?: { token?: string };
+} = {}) {
+  const { autoConnect = true, auth } = options;
+  const [status, setStatus] = useState<ConnectionStatus>(wsClient.getStatus());
 
   useEffect(() => {
-    if (autoConnect) {
-      wsClient
-        .connect(chatId)
-        .catch((error) => {
-          console.error('Failed to connect to WebSocket:', error);
-          onError?.(error);
-        });
-    }
+    const unsubscribe = wsClient.onStatusChange(setStatus);
 
-    // Set up event listeners
-    if (onMessage) {
-      Object.values(WSMessageType).forEach((type) => {
-        const unsubscribe = wsClient.on(type as WSMessageType, (data) => {
-          onMessage(type as WSMessageType, data);
-        });
-        unsubscribersRef.current.push(unsubscribe);
+    if (autoConnect && !wsClient.isConnected()) {
+      wsClient.connect(auth).catch((error) => {
+        console.error('[WebSocket Hook] Failed to connect:', error);
       });
     }
 
-    if (onError) {
-      const unsubscribe = wsClient.onError(onError);
-      unsubscribersRef.current.push(unsubscribe);
-    }
-
-    if (onConnect) {
-      const unsubscribe = wsClient.onConnect(onConnect);
-      unsubscribersRef.current.push(unsubscribe);
-    }
-
-    if (onDisconnect) {
-      const unsubscribe = wsClient.onDisconnect(onDisconnect);
-      unsubscribersRef.current.push(unsubscribe);
-    }
-
-    // Cleanup
     return () => {
-      unsubscribersRef.current.forEach((unsubscribe) => unsubscribe());
-      unsubscribersRef.current = [];
+      unsubscribe();
     };
-  }, [chatId, autoConnect, onMessage, onError, onConnect, onDisconnect]);
+  }, [autoConnect, auth]);
+
+  const connect = useCallback(() => wsClient.connect(auth), [auth]);
+  const disconnect = useCallback(() => wsClient.disconnect(), []);
 
   return {
-    send: wsClient.send.bind(wsClient),
-    sendMessage: wsClient.sendMessage.bind(wsClient),
-    connect: wsClient.connect.bind(wsClient),
-    disconnect: wsClient.disconnect.bind(wsClient),
-    isConnected: wsClient.isConnected.bind(wsClient),
+    status,
+    isConnected: status === 'connected',
+    connect,
+    disconnect,
   };
+}
+
+/**
+ * Hook for project room management
+ */
+export function useProjectRoom(projectId: number | null) {
+  useEffect(() => {
+    if (projectId === null || !wsClient.isConnected()) {
+      return;
+    }
+
+    wsClient.joinProject(projectId);
+
+    return () => {
+      wsClient.leaveProject(projectId);
+    };
+  }, [projectId]);
+}
+
+/**
+ * Hook for streaming chat messages
+ */
+export function useChatStream(chatId: number, options: {
+  onToken?: (token: string) => void;
+  onSources?: (sources: SourceDocument[]) => void;
+  onComplete?: (metadata: { model: string; sources_count: number }) => void;
+  onError?: (error: string) => void;
+} = {}) {
+  const { onToken, onSources, onComplete, onError } = options;
+
+  useEffect(() => {
+    const unsubscribeToken = wsClient.onMessageToken((data) => {
+      if (data.chat_id === chatId && onToken) {
+        onToken(data.token);
+      }
+    });
+
+    const unsubscribeSources = wsClient.onMessageSources((data) => {
+      if (data.chat_id === chatId && onSources) {
+        onSources(data.sources);
+      }
+    });
+
+    const unsubscribeComplete = wsClient.onMessageComplete((data) => {
+      if (data.chat_id === chatId && onComplete) {
+        onComplete(data.metadata);
+      }
+    });
+
+    const unsubscribeError = wsClient.onError((data) => {
+      if (data.chat_id === chatId && onError) {
+        onError(data.message);
+      }
+    });
+
+    return () => {
+      unsubscribeToken();
+      unsubscribeSources();
+      unsubscribeComplete();
+      unsubscribeError();
+    };
+  }, [chatId, onToken, onSources, onComplete, onError]);
+
+  const sendMessage = useCallback(
+    (message: string, options?: { model?: string; temperature?: number; include_history?: boolean }) => {
+      wsClient.sendMessage({
+        chat_id: chatId,
+        message,
+        ...options,
+      });
+    },
+    [chatId]
+  );
+
+  return { sendMessage };
+}
+
+/**
+ * Hook for document processing updates
+ */
+export function useDocumentUpdates(onStatusChange?: (data: DocumentStatusEvent) => void) {
+  useEffect(() => {
+    if (!onStatusChange) return;
+
+    const unsubscribe = wsClient.onDocumentStatus(onStatusChange);
+    return unsubscribe;
+  }, [onStatusChange]);
+}
+
+/**
+ * Hook for project updates
+ */
+export function useProjectUpdates(onUpdate?: (data: ProjectUpdateEvent) => void) {
+  useEffect(() => {
+    if (!onUpdate) return;
+
+    const unsubscribe = wsClient.onProjectUpdate(onUpdate);
+    return unsubscribe;
+  }, [onUpdate]);
 }
