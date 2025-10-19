@@ -21,24 +21,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. Fixed backend server commands to use socket_app
 3. Created comprehensive frontend documentation
 
-### Changes Made
-- `/README.md`: Updated backend server commands, expanded project structure section
-- `/frontend/README/README.md`: Replaced generic Next.js content with project-specific documentation
-
-### Reasoning & Decisions
-- Used socket_app instead of app to ensure WebSocket support is properly documented
-- Added detailed project structure to help new developers understand the codebase architecture
-- Replaced generic frontend README because it didn't provide value for this specific project
-
-### Key Findings
-- The .env.local.example file doesn't exist in frontend, so provided direct setup command
-- Backend has a crud/ directory that wasn't documented in original README
-
-### Next Steps
-- Consider creating .env.example files for frontend
-- Keep documentation in sync as new features are added
-```
-
 This summary helps maintain clarity, provides documentation of work done, and ensures transparent communication about the development process.
 
 ## Project Overview
@@ -78,45 +60,6 @@ pytest --cov=backend --cov-report=html  # Coverage report
 # Code quality
 black backend/                  # Format Python code
 pylint backend/                 # Lint Python code
-```
-
-### Frontend Setup & Development
-```bash
-# Initial setup
-cd frontend
-npx create-next-app@14 . --typescript --tailwind --app
-npm install axios zustand @tanstack/react-query
-
-# Running the dev server
-npm run dev                     # Development server at localhost:3000
-npm run build                   # Production build
-npm run start                   # Start production server
-
-# shadcn/ui components
-npx shadcn-ui@latest init
-npx shadcn-ui@latest add button card dialog form input
-
-# Testing
-npm test                        # Run tests
-npm run test:watch             # Watch mode
-npm run test:e2e               # End-to-end tests with Playwright
-
-# Code quality
-npm run lint                    # Run ESLint
-npm run format                  # Format with Prettier
-```
-
-### Ollama Setup
-```bash
-# Pull required models
-ollama pull llama3.2           # Main chat model
-ollama pull nomic-embed-text   # Embedding model
-
-# List installed models
-ollama list
-
-# Test model
-ollama run llama3.2 "Hello"
 ```
 
 ## Architecture Overview
