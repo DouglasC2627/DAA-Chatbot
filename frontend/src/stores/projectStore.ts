@@ -9,16 +9,16 @@ import type { Project } from '@/types';
 
 interface ProjectState {
   // Current state
-  currentProjectId: string | null;
+  currentProjectId: number | null;
   projects: Project[];
   isLoading: boolean;
   error: string | null;
 
   // Actions - Project management
-  setCurrentProject: (projectId: string | null) => void;
+  setCurrentProject: (projectId: number | null) => void;
   addProject: (project: Project) => void;
-  updateProject: (projectId: string, updates: Partial<Project>) => void;
-  deleteProject: (projectId: string) => void;
+  updateProject: (projectId: number, updates: Partial<Project>) => void;
+  deleteProject: (projectId: number) => void;
   setProjects: (projects: Project[]) => void;
 
   // Actions - Loading state
@@ -142,7 +142,7 @@ export const useProjectStore = create<ProjectState>()(
 export const selectCurrentProject = (state: ProjectState) =>
   state.projects.find((project) => project.id === state.currentProjectId);
 
-export const selectProjectById = (projectId: string) => (state: ProjectState) =>
+export const selectProjectById = (projectId: number) => (state: ProjectState) =>
   state.projects.find((project) => project.id === projectId);
 
 export const selectProjects = (state: ProjectState) => state.projects;

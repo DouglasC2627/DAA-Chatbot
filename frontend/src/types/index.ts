@@ -5,7 +5,7 @@
 // ============================================================================
 
 export interface Project {
-  id: string;
+  id: number;
   name: string;
   description?: string;
   created_at: string;
@@ -29,8 +29,8 @@ export interface UpdateProjectRequest {
 // ============================================================================
 
 export interface Document {
-  id: string;
-  project_id: string;
+  id: number;
+  project_id: number;
   filename: string;
   file_type: string;
   file_size: number;
@@ -50,16 +50,32 @@ export enum DocumentStatus {
 }
 
 export interface DocumentUploadResponse {
-  document_id: string;
+  document_id: number;
   filename: string;
   status: DocumentStatus;
 }
 
+export interface DocumentResponse {
+  id: number;
+  project_id: number;
+  filename: string;
+  file_type: string;
+  file_size: number;
+  status: string;
+  page_count: number | null;
+  word_count: number | null;
+  chunk_count: number;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BulkDocumentUploadResponse {
-  documents: DocumentUploadResponse[];
+  uploaded: DocumentResponse[];
+  failed: Array<{ filename: string; error: string }>;
   total: number;
   successful: number;
-  failed: number;
+  failed_count: number;
 }
 
 // ============================================================================
@@ -67,8 +83,8 @@ export interface BulkDocumentUploadResponse {
 // ============================================================================
 
 export interface Chat {
-  id: string;
-  project_id: string;
+  id: number;
+  project_id: number;
   title: string;
   created_at: string;
   updated_at: string;
@@ -76,8 +92,8 @@ export interface Chat {
 }
 
 export interface Message {
-  id: string;
-  chat_id: string;
+  id: number;
+  chat_id: number;
   role: MessageRole;
   content: string;
   sources?: SourceReference[];
@@ -92,7 +108,7 @@ export enum MessageRole {
 }
 
 export interface SourceReference {
-  document_id: string;
+  document_id: number;
   document_name: string;
   chunk_index: number;
   page_number?: number;
@@ -103,12 +119,12 @@ export interface SourceReference {
 
 export interface SendMessageRequest {
   content: string;
-  chat_id?: string;
+  chat_id?: number;
 }
 
 export interface SendMessageResponse {
-  message_id: string;
-  chat_id: string;
+  message_id: number;
+  chat_id: number;
   content: string;
   sources: SourceReference[];
 }
@@ -132,14 +148,14 @@ export enum WSMessageType {
 }
 
 export interface MessageChunkData {
-  chat_id: string;
-  message_id: string;
+  chat_id: number;
+  message_id: number;
   chunk: string;
   is_final: boolean;
 }
 
 export interface ProcessingUpdateData {
-  document_id: string;
+  document_id: number;
   status: DocumentStatus;
   progress: number;
   message?: string;
@@ -159,7 +175,7 @@ export interface GoogleDriveFile {
 
 export interface GoogleDriveImportRequest {
   file_ids: string[];
-  project_id: string;
+  project_id: number;
 }
 
 // ============================================================================
