@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryProvider } from '@/components/providers/QueryProvider';
+import { StorageMigration } from '@/components/providers/StorageMigration';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -44,6 +45,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <QueryProvider>
           <ThemeProvider defaultTheme="system" storageKey="daa-chatbot-ui-theme">
+            <StorageMigration />
             {children}
             <Toaster />
           </ThemeProvider>
