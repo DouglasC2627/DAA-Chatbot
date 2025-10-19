@@ -66,8 +66,8 @@ pip install -r requirements.txt
 # Create .env file
 cp .env.example .env  # Edit with your settings
 
-# Run backend server
-uvicorn api.main:app --reload
+# Run backend server (with WebSocket support)
+uvicorn api.main:socket_app --reload
 ```
 
 Backend will be available at http://localhost:8000
@@ -80,7 +80,8 @@ cd frontend
 npm install
 
 # Create .env.local file
-cp .env.local.example .env.local  # Edit if needed
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000" > .env.local
 
 # Run frontend dev server
 npm run dev
@@ -99,8 +100,8 @@ source venv/bin/activate
 # Install development dependencies
 pip install -r requirements.txt
 
-# Run with hot reload
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+# Run with hot reload (with WebSocket support)
+uvicorn api.main:socket_app --reload --host 0.0.0.0 --port 8000
 
 # Format code
 black backend/
@@ -159,17 +160,40 @@ Git hooks are configured to run code quality checks before commits:
 ```
 daa-chatbot/
 ├── backend/              # FastAPI backend
-│   ├── api/             # API routes and endpoints
-│   ├── core/            # Core functionality (RAG, LLM, vector store)
-│   ├── models/          # Database models
-│   ├── services/        # Business logic services
+│   ├── api/
+│   │   ├── routes/      # API endpoints (chat, documents, projects, llm)
+│   │   ├── websocket/   # WebSocket handlers for real-time chat
+│   │   └── main.py      # FastAPI app entry point with Socket.IO
+│   ├── core/            # Core functionality
+│   │   ├── rag_pipeline.py    # RAG orchestration
+│   │   ├── llm.py             # Ollama client wrapper
+│   │   ├── vectorstore.py     # ChromaDB operations
+│   │   ├── embeddings.py      # Embedding generation
+│   │   └── chunking.py        # Text splitting strategies
+│   ├── models/          # SQLAlchemy database models
+│   ├── services/        # Business logic
+│   │   ├── chat_service.py       # Conversation management
+│   │   ├── document_processor.py # Document text extraction
+│   │   ├── project_service.py    # Project CRUD operations
+│   │   └── file_storage.py       # File management
+│   ├── crud/            # Database CRUD operations
 │   └── storage/         # Data storage (SQLite, ChromaDB, uploads)
 ├── frontend/            # Next.js frontend
 │   └── src/
-│       ├── app/         # Next.js app router pages
+│       ├── app/         # Next.js app router
+│       │   ├── page.tsx           # Home page
+│       │   ├── layout.tsx         # Root layout
+│       │   ├── chat/              # Chat pages
+│       │   ├── projects/          # Project management
+│       │   └── documents/         # Document management
 │       ├── components/  # React components
+│       │   ├── ui/                # shadcn/ui components
+│       │   ├── chat/              # Chat interface components
+│       │   ├── documents/         # Document upload components
+│       │   └── projects/          # Project components
 │       ├── lib/         # Utilities and API clients
-│       └── stores/      # State management
+│       ├── stores/      # Zustand state management
+│       └── types/       # TypeScript type definitions
 └── docker-compose.yml   # Docker configuration
 ```
 
