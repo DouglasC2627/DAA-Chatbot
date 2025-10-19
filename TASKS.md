@@ -306,7 +306,7 @@ npm install react-dropzone
 
 ### Task 8.1: WebSocket Implementation - Backend
 ```bash
-pip install python-socketio==5.10.0 python-multipart==0.0.6
+pip install python-socketio==5.14.2 python-multipart==0.0.20
 ```
 - [ ] Create `backend/api/websocket/chat_ws.py`
 - [ ] Implement WebSocket connection handling
