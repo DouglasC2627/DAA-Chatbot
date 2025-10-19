@@ -2,6 +2,45 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Task Completion Protocol
+
+**IMPORTANT:** After completing any task assigned by the user, you MUST provide a comprehensive task summary that includes:
+
+1. **Tasks Completed:** A clear, numbered list of all tasks that were accomplished
+2. **Changes Made:** Specific files modified, created, or deleted with brief descriptions
+3. **Reasoning & Decisions:** Explanation of the approach taken and why specific decisions were made
+4. **Key Findings:** Any important discoveries, issues identified, or insights gained during the task
+5. **Next Steps (if applicable):** Suggested follow-up actions or recommendations
+
+**Format Example:**
+```
+## Task Summary
+
+### Tasks Completed
+1. Updated README.md files across the project
+2. Fixed backend server commands to use socket_app
+3. Created comprehensive frontend documentation
+
+### Changes Made
+- `/README.md`: Updated backend server commands, expanded project structure section
+- `/frontend/README/README.md`: Replaced generic Next.js content with project-specific documentation
+
+### Reasoning & Decisions
+- Used socket_app instead of app to ensure WebSocket support is properly documented
+- Added detailed project structure to help new developers understand the codebase architecture
+- Replaced generic frontend README because it didn't provide value for this specific project
+
+### Key Findings
+- The .env.local.example file doesn't exist in frontend, so provided direct setup command
+- Backend has a crud/ directory that wasn't documented in original README
+
+### Next Steps
+- Consider creating .env.example files for frontend
+- Keep documentation in sync as new features are added
+```
+
+This summary helps maintain clarity, provides documentation of work done, and ensures transparent communication about the development process.
+
 ## Project Overview
 
 DAA Chatbot is a fully-local, privacy-focused RAG (Retrieval-Augmented Generation) chatbot system. All data processing, storage, and inference happens locally using Ollama for LLM capabilities.
@@ -87,50 +126,102 @@ ollama run llama3.2 "Hello"
 backend/
 ├── api/
 │   ├── main.py              # FastAPI app entry point with Socket.IO integration
-│   ├── routes/              # API endpoints (chat, documents, projects, auth, integrations)
-│   ├── middleware/          # CORS, auth, rate limiting
+│   ├── routes/              # API endpoints
+│   │   ├── chat.py          # Chat conversation endpoints
+│   │   ├── documents.py     # Document upload/management endpoints
+│   │   ├── projects.py      # Project CRUD endpoints
+│   │   └── llm.py           # LLM configuration and testing endpoints
 │   └── websocket/
 │       └── chat_ws.py       # WebSocket handlers for real-time chat streaming
 ├── core/
-│   ├── config.py            # Settings and configuration
-│   ├── llm.py               # Ollama client wrapper
-│   ├── vectorstore.py       # ChromaDB operations
+│   ├── config.py            # Settings and configuration (environment variables)
+│   ├── database.py          # Database session management
+│   ├── llm.py               # Ollama client wrapper and LLM interactions
+│   ├── vectorstore.py       # ChromaDB operations and vector search
 │   ├── rag_pipeline.py      # RAG orchestration: retrieval + generation
 │   ├── embeddings.py        # Embedding generation via Ollama
 │   └── chunking.py          # Text splitting strategies for documents
+├── crud/                    # Database CRUD operations
+│   ├── chat.py              # Chat and message CRUD
+│   ├── document.py          # Document CRUD
+│   ├── project.py           # Project CRUD
+│   └── *.py                 # Other database operations
 ├── services/
 │   ├── document_processor.py # Extract text from PDF, DOCX, TXT, CSV, XLSX
 │   ├── chat_service.py       # Conversation management and history
-│   ├── project_service.py    # Project CRUD and isolation
-│   └── google_drive.py       # Google Drive OAuth and import
-├── models/
-│   └── *.py                 # SQLAlchemy models (Project, Document, Chat, Message, User)
-└── storage/
-    ├── sqlite/              # Relational data (metadata, chat history)
-    ├── chroma/              # Vector database persistence
-    └── documents/           # Uploaded file storage
+│   ├── project_service.py    # Project CRUD and isolation logic
+│   └── file_storage.py       # File system operations and storage management
+├── models/                  # SQLAlchemy ORM models
+│   ├── project.py           # Project model
+│   ├── document.py          # Document model
+│   ├── chat.py              # Chat and Message models
+│   └── *.py                 # Other database models
+├── tests/                   # Test suite
+│   ├── test_rag_pipeline.py # RAG pipeline tests
+│   ├── test_document_processor.py # Document processing tests
+│   └── *.py                 # Other test files
+├── alembic/                 # Database migrations
+│   └── versions/            # Migration version files
+├── utils/                   # Utility functions
+│   └── *.py                 # Helper functions
+├── storage/                 # Data storage directories
+│   ├── sqlite/              # SQLite database files (metadata, chat history)
+│   ├── chroma/              # ChromaDB vector database persistence
+│   └── documents/           # Uploaded file storage
+└── README/                  # Additional documentation
+    ├── FILE_STORAGE_README.md  # File storage system documentation
+    └── WEBSOCKET_GUIDE.md      # WebSocket implementation guide
 ```
 
 ### Frontend Structure
 ```
 frontend/
-├── app/                     # Next.js App Router
-│   ├── layout.tsx          # Root layout with providers
-│   ├── page.tsx            # Home page
-│   ├── projects/           # Project management pages
-│   └── chat/[projectId]/   # Chat interface per project
-├── components/
-│   ├── ui/                 # shadcn/ui primitives
-│   ├── chat/               # Chat UI (MessageList, MessageInput, SourceReferences)
-│   ├── documents/          # Document upload and management
-│   └── projects/           # Project creation and settings
-├── lib/
-│   ├── api.ts              # Axios client for backend API
-│   └── websocket.ts        # WebSocket client for streaming
-└── stores/
-    ├── chatStore.ts        # Zustand store for chat state
-    ├── projectStore.ts     # Zustand store for projects
-    └── documentStore.ts    # Zustand store for documents
+├── src/
+│   ├── app/                     # Next.js App Router pages
+│   │   ├── layout.tsx          # Root layout with providers (QueryClientProvider, Toaster)
+│   │   ├── page.tsx            # Home/landing page
+│   │   ├── globals.css         # Global styles and Tailwind CSS imports
+│   │   ├── chat/               # Chat interface pages
+│   │   ├── projects/           # Project management pages
+│   │   └── documents/          # Document management pages
+│   ├── components/             # React components
+│   │   ├── ui/                 # shadcn/ui primitives (Button, Card, Dialog, Input, etc.)
+│   │   ├── chat/               # Chat-specific components
+│   │   │   ├── MessageList.tsx         # Display chat messages
+│   │   │   ├── MessageInput.tsx        # Message input form
+│   │   │   └── SourceReferences.tsx    # RAG source citations
+│   │   ├── documents/          # Document management components
+│   │   │   ├── DocumentUpload.tsx      # File upload with drag-and-drop
+│   │   │   └── DocumentList.tsx        # Document listing
+│   │   ├── projects/           # Project components
+│   │   │   ├── ProjectCard.tsx         # Project display card
+│   │   │   └── CreateProject.tsx       # Project creation form
+│   │   ├── layout/             # Layout components (Header, Sidebar, Navigation)
+│   │   ├── notifications/      # Notification/toast components
+│   │   ├── providers/          # React context providers
+│   │   └── theme-provider.tsx  # Theme/dark mode provider
+│   ├── lib/                    # Utilities and configurations
+│   │   ├── api.ts              # Axios client and API functions
+│   │   ├── websocket.ts        # Socket.IO client setup
+│   │   └── utils.ts            # Helper functions (cn, formatters, etc.)
+│   ├── stores/                 # Zustand state management stores
+│   │   ├── chatStore.ts        # Chat messages and streaming state
+│   │   ├── projectStore.ts     # Project data and current project
+│   │   └── documentStore.ts    # Document management and upload progress
+│   ├── types/                  # TypeScript type definitions
+│   │   ├── index.ts            # Shared types and interfaces
+│   │   └── types.d.ts          # Global type declarations
+│   └── hooks/                  # Custom React hooks
+│       └── useWebSocket.ts     # WebSocket connection management hook
+├── public/                     # Static assets (images, icons)
+├── README/                     # Frontend documentation
+│   └── README.md              # Comprehensive frontend guide
+├── package.json               # Dependencies and scripts
+├── tailwind.config.ts         # Tailwind CSS configuration
+├── components.json            # shadcn/ui configuration
+├── next.config.mjs            # Next.js configuration
+├── tsconfig.json              # TypeScript configuration
+└── .env.local                 # Environment variables (not in git)
 ```
 
 ### RAG Pipeline Flow
@@ -203,11 +294,13 @@ frontend/
 1. **Ollama Connection:** Ensure Ollama is running (`ollama serve`) before starting backend
 2. **Embeddings Model:** Must pull embedding model separately (`ollama pull nomic-embed-text`)
 3. **ChromaDB Persistence:** Set `persist_directory` in config or data will be lost on restart
-4. **CORS:** Frontend-backend CORS configured in `backend/api/middleware/cors.py`
+4. **CORS:** Frontend-backend CORS configured in `backend/api/main.py` (CORSMiddleware)
 5. **File Size Limits:** Default 10MB per file, configurable in `backend/core/config.py`
 6. **WebSocket Ports:** Backend WebSocket uses same port as HTTP (default 8000)
-7. **Next.js Proxying:** API calls proxied in `next.config.js` to avoid CORS in development
+7. **WebSocket App:** Must use `uvicorn api.main:socket_app` (not `app`) to enable WebSocket support
 8. **Vector Store per Project:** Each project creates separate ChromaDB collection
+9. **Frontend .env:** No `.env.local.example` file exists; create `.env.local` manually with API URLs
+10. **Database Migrations:** Run `alembic upgrade head` after pulling changes that modify models
 
 ## Environment Configuration
 
