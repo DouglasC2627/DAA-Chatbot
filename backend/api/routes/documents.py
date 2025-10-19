@@ -163,7 +163,7 @@ async def process_document_background(
             try:
                 # Extract text from document
                 with open(file_path, 'rb') as f:
-                    result = document_processor.process_file(f, file_path.name)
+                    result = document_processor.process_document(f, file_path.name)
 
                 # Update document metadata
                 document.page_count = result.page_count
@@ -183,7 +183,7 @@ async def process_document_background(
                 await notify_document_processing(project_id, document_id, 'processing', 30)
 
                 # Generate embeddings for chunks
-                chunk_texts = [chunk['text'] for chunk in chunks]
+                chunk_texts = [chunk.text for chunk in chunks]
                 embeddings = embedding_service.generate_embeddings_batch(
                     texts=chunk_texts,
                     batch_size=10
@@ -191,8 +191,8 @@ async def process_document_background(
 
                 # Filter out empty embeddings
                 valid_data = [
-                    (text, emb, meta)
-                    for text, emb, meta in zip(chunk_texts, embeddings, chunks)
+                    (text, emb, chunk)
+                    for text, emb, chunk in zip(chunk_texts, embeddings, chunks)
                     if emb  # Only include non-empty embeddings
                 ]
 
@@ -209,8 +209,8 @@ async def process_document_background(
                     {
                         'document_id': document_id,
                         'chunk_index': i,
-                        'start_char': chunk.get('start', 0),
-                        'end_char': chunk.get('end', 0),
+                        'start_char': chunk.metadata.start_char or 0,
+                        'end_char': chunk.metadata.end_char or 0,
                         'filename': document.filename
                     }
                     for i, chunk in enumerate(valid_chunks)

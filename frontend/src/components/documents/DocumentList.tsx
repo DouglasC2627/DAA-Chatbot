@@ -1,47 +1,123 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useDocumentStore, selectProjectDocuments } from '@/stores/documentStore';
 import { useProjectStore, selectCurrentProject } from '@/stores/projectStore';
 import DocumentCard from './DocumentCard';
 import DocumentPreview from './DocumentPreview';
-import { Document } from '@/types';
+import { Document, DocumentStatus } from '@/types';
 import { FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDocumentUpdates } from '@/lib/websocket';
+import { documentApi } from '@/lib/api';
 
 export default function DocumentList() {
   const currentProject = useProjectStore(selectCurrentProject);
   const allDocuments = useDocumentStore((state) => state.documents);
+  const setDocuments = useDocumentStore((state) => state.setDocuments);
+  const updateDocument = useDocumentStore((state) => state.updateDocument);
   const deleteDocument = useDocumentStore((state) => state.deleteDocument);
   const { toast } = useToast();
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Get documents for current project
   const projectDocuments = currentProject ? allDocuments[currentProject.id] || [] : [];
 
-  const handleDelete = (document: Document) => {
-    if (confirm(`Are you sure you want to delete "${document.filename}"?`)) {
-      // TODO: Replace with actual API call
-      // await api.delete(`/api/documents/${document.id}`);
+  // Fetch documents when project changes
+  useEffect(() => {
+    if (!currentProject) return;
 
-      if (currentProject) {
-        deleteDocument(currentProject.id, document.id);
+    const fetchDocuments = async () => {
+      setIsLoading(true);
+      try {
+        const docs = await documentApi.list(currentProject.id);
+        const formattedDocs = docs.map((doc) => ({
+          id: doc.id,
+          project_id: currentProject.id,
+          filename: doc.filename,
+          file_type: doc.file_type,
+          file_size: doc.file_size,
+          upload_date: doc.created_at,
+          processing_status: doc.status as DocumentStatus,
+          page_count: doc.page_count || 0,
+          chunk_count: doc.chunk_count || 0,
+        }));
+        setDocuments(currentProject.id, formattedDocs);
+      } catch (error) {
+        toast({
+          title: 'Failed to Load Documents',
+          description: error instanceof Error ? error.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      toast({
-        title: 'Document Deleted',
-        description: `"${document.filename}" has been deleted`,
+    fetchDocuments();
+  }, [currentProject, setDocuments, toast]);
+
+  // Listen for WebSocket document status updates
+  const handleDocumentStatusUpdate = useCallback(
+    (event: { document_id: number; status: string; progress?: number }) => {
+      if (!currentProject) return;
+
+      // Update the document status in the store
+      updateDocument(currentProject.id, event.document_id, {
+        processing_status: event.status as DocumentStatus,
       });
+
+      // If completed, refresh the document to get updated metadata
+      if (event.status === 'completed') {
+        documentApi
+          .get(event.document_id)
+          .then((doc) => {
+            updateDocument(currentProject.id, event.document_id, {
+              processing_status: doc.status as DocumentStatus,
+              page_count: doc.page_count || 0,
+              chunk_count: doc.chunk_count || 0,
+              word_count: doc.word_count || 0,
+            });
+          })
+          .catch(console.error);
+      }
+    },
+    [currentProject, updateDocument]
+  );
+
+  useDocumentUpdates(handleDocumentStatusUpdate);
+
+  const handleDelete = async (document: Document) => {
+    if (confirm(`Are you sure you want to delete "${document.filename}"?`)) {
+      try {
+        await documentApi.delete(document.id);
+
+        if (currentProject) {
+          deleteDocument(currentProject.id, document.id);
+        }
+
+        toast({
+          title: 'Document Deleted',
+          description: `"${document.filename}" has been deleted`,
+        });
+      } catch (error) {
+        toast({
+          title: 'Delete Failed',
+          description: error instanceof Error ? error.message : 'Failed to delete document',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
-  const handleDownload = (document: Document) => {
-    // TODO: Implement actual download
+  const handleDownload = async (document: Document) => {
     toast({
       title: 'Download Started',
       description: `Downloading "${document.filename}"`,
     });
+    // TODO: Implement actual download using documentApi
   };
 
   const handlePreview = (document: Document) => {

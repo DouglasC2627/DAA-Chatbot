@@ -9,28 +9,28 @@ import type { Chat, Message, SourceReference, MessageRole } from '@/types';
 
 interface ChatState {
   // Current state
-  currentChatId: string | null;
+  currentChatId: number | null;
   chats: Chat[];
-  messages: Record<string, Message[]>; // chatId -> messages
+  messages: Record<number, Message[]>; // chatId -> messages
   activeStreaming: boolean;
-  streamingMessageId: string | null;
+  streamingMessageId: number | null;
   streamingContent: string;
 
   // Actions - Chat management
-  setCurrentChat: (chatId: string | null) => void;
+  setCurrentChat: (chatId: number | null) => void;
   addChat: (chat: Chat) => void;
-  updateChat: (chatId: string, updates: Partial<Chat>) => void;
-  deleteChat: (chatId: string) => void;
+  updateChat: (chatId: number, updates: Partial<Chat>) => void;
+  deleteChat: (chatId: number) => void;
   setChats: (chats: Chat[]) => void;
 
   // Actions - Message management
-  addMessage: (chatId: string, message: Message) => void;
-  updateMessage: (chatId: string, messageId: string, updates: Partial<Message>) => void;
-  setMessages: (chatId: string, messages: Message[]) => void;
-  clearMessages: (chatId: string) => void;
+  addMessage: (chatId: number, message: Message) => void;
+  updateMessage: (chatId: number, messageId: number, updates: Partial<Message>) => void;
+  setMessages: (chatId: number, messages: Message[]) => void;
+  clearMessages: (chatId: number) => void;
 
   // Actions - Streaming
-  startStreaming: (messageId: string) => void;
+  startStreaming: (messageId: number) => void;
   appendStreamChunk: (chunk: string) => void;
   endStreaming: () => void;
   resetStreaming: () => void;
@@ -279,7 +279,7 @@ export const selectCurrentChat = (state: ChatState) =>
 export const selectCurrentMessages = (state: ChatState) =>
   state.currentChatId ? state.messages[state.currentChatId] || [] : [];
 
-export const selectChatMessages = (chatId: string) => (state: ChatState) =>
+export const selectChatMessages = (chatId: number) => (state: ChatState) =>
   state.messages[chatId] || [];
 
 export const selectIsStreaming = (state: ChatState) => state.activeStreaming;

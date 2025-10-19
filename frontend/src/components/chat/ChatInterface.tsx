@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useProjectStore } from '@/stores/projectStore';
+import { useProjectStore, selectProjects } from '@/stores/projectStore';
 import { useChatStore, selectCurrentChat, selectCurrentMessages } from '@/stores/chatStore';
 import { MessageRole } from '@/types';
 import MessageList from './MessageList';
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 interface ChatInterfaceProps {
-  projectId: string;
+  projectId: number;
 }
 
 export default function ChatInterface({ projectId }: ChatInterfaceProps) {
@@ -21,12 +21,11 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Get project details
-  const projects = useProjectStore((state) => state.projects);
-  const project = projects.find((p) => p.id === projectId);
+  // Get project details - use stable selector
+  const projects = useProjectStore(selectProjects);
+  const project = useMemo(() => projects.find((p) => p.id === projectId), [projects, projectId]);
 
-  // Chat store state
-  const currentChat = useChatStore(selectCurrentChat);
+  // Chat store state - use stable selectors
   const messages = useChatStore(selectCurrentMessages);
   const currentChatId = useChatStore((state) => state.currentChatId);
   const setCurrentChat = useChatStore((state) => state.setCurrentChat);
@@ -44,9 +43,9 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
     if (projectChat) {
       setCurrentChat(projectChat.id);
     } else {
-      // Create a new chat for this project
+      // Create a new chat for this project (mock - will be replaced with API call)
       const newChat = {
-        id: `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: Date.now(), // Use timestamp as numeric ID
         project_id: projectId,
         title: `Chat with ${project.name}`,
         created_at: new Date().toISOString(),
@@ -75,9 +74,9 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
     }
 
     try {
-      // Add user message
+      // Add user message (mock - will be replaced with API call)
       const userMessage = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: Date.now(), // Use timestamp as numeric ID
         chat_id: currentChatId,
         role: MessageRole.USER,
         content,
@@ -93,13 +92,13 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const assistantMessage = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: Date.now() + 1, // Ensure unique ID by adding 1
         chat_id: currentChatId,
         role: MessageRole.ASSISTANT,
         content: `I received your message: "${content}". This is a mock response. Once the backend is connected, I'll provide real AI-powered responses based on your documents.`,
         sources: [
           {
-            document_id: 'doc-1',
+            document_id: 1, // Use numeric ID
             document_name: 'Sample Document.pdf',
             chunk_index: 0,
             page_number: 1,

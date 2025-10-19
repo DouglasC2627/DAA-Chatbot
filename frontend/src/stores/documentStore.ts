@@ -9,35 +9,35 @@ import type { Document, DocumentStatus } from '@/types';
 
 interface DocumentState {
   // Current state
-  documents: Record<string, Document[]>; // projectId -> documents
-  selectedDocumentIds: string[];
-  uploadProgress: Record<string, number>; // documentId -> progress (0-100)
-  processingDocuments: Set<string>; // documentIds being processed
+  documents: Record<number, Document[]>; // projectId -> documents
+  selectedDocumentIds: number[];
+  uploadProgress: Record<number, number>; // documentId -> progress (0-100)
+  processingDocuments: Set<number>; // documentIds being processed
   isLoading: boolean;
   error: string | null;
 
   // Actions - Document management
-  addDocument: (projectId: string, document: Document) => void;
-  updateDocument: (projectId: string, documentId: string, updates: Partial<Document>) => void;
-  deleteDocument: (projectId: string, documentId: string) => void;
-  setDocuments: (projectId: string, documents: Document[]) => void;
-  clearDocuments: (projectId: string) => void;
+  addDocument: (projectId: number, document: Document) => void;
+  updateDocument: (projectId: number, documentId: number, updates: Partial<Document>) => void;
+  deleteDocument: (projectId: number, documentId: number) => void;
+  setDocuments: (projectId: number, documents: Document[]) => void;
+  clearDocuments: (projectId: number) => void;
 
   // Actions - Selection
-  selectDocument: (documentId: string) => void;
-  unselectDocument: (documentId: string) => void;
-  selectAllDocuments: (projectId: string) => void;
+  selectDocument: (documentId: number) => void;
+  unselectDocument: (documentId: number) => void;
+  selectAllDocuments: (projectId: number) => void;
   clearSelection: () => void;
-  toggleDocumentSelection: (documentId: string) => void;
+  toggleDocumentSelection: (documentId: number) => void;
 
   // Actions - Upload progress
-  setUploadProgress: (documentId: string, progress: number) => void;
-  clearUploadProgress: (documentId: string) => void;
+  setUploadProgress: (documentId: number, progress: number) => void;
+  clearUploadProgress: (documentId: number) => void;
   resetUploadProgress: () => void;
 
   // Actions - Processing status
-  addProcessingDocument: (documentId: string) => void;
-  removeProcessingDocument: (documentId: string) => void;
+  addProcessingDocument: (documentId: number) => void;
+  removeProcessingDocument: (documentId: number) => void;
   clearProcessingDocuments: () => void;
 
   // Actions - Loading state
@@ -56,7 +56,7 @@ const initialState = {
   documents: {},
   selectedDocumentIds: [],
   uploadProgress: {},
-  processingDocuments: new Set<string>(),
+  processingDocuments: new Set<number>(),
   isLoading: false,
   error: null,
 };
@@ -120,9 +120,7 @@ export const useDocumentStore = create<DocumentState>()(
                   ...state.documents,
                   [projectId]: projectDocuments.filter((doc) => doc.id !== documentId),
                 },
-                selectedDocumentIds: state.selectedDocumentIds.filter(
-                  (id) => id !== documentId
-                ),
+                selectedDocumentIds: state.selectedDocumentIds.filter((id) => id !== documentId),
                 error: null,
               };
             },
@@ -314,34 +312,34 @@ export const useDocumentStore = create<DocumentState>()(
 // Selectors (for optimized component re-renders)
 // ============================================================================
 
-export const selectProjectDocuments = (projectId: string) => (state: DocumentState) =>
+export const selectProjectDocuments = (projectId: number) => (state: DocumentState) =>
   state.documents[projectId] || [];
 
 export const selectDocumentById =
-  (projectId: string, documentId: string) => (state: DocumentState) => {
+  (projectId: number, documentId: number) => (state: DocumentState) => {
     const projectDocuments = state.documents[projectId] || [];
     return projectDocuments.find((doc) => doc.id === documentId);
   };
 
-export const selectSelectedDocuments = (projectId: string) => (state: DocumentState) => {
+export const selectSelectedDocuments = (projectId: number) => (state: DocumentState) => {
   const projectDocuments = state.documents[projectId] || [];
   return projectDocuments.filter((doc) => state.selectedDocumentIds.includes(doc.id));
 };
 
-export const selectIsDocumentSelected = (documentId: string) => (state: DocumentState) =>
+export const selectIsDocumentSelected = (documentId: number) => (state: DocumentState) =>
   state.selectedDocumentIds.includes(documentId);
 
-export const selectUploadProgress = (documentId: string) => (state: DocumentState) =>
+export const selectUploadProgress = (documentId: number) => (state: DocumentState) =>
   state.uploadProgress[documentId] || 0;
 
-export const selectIsProcessing = (documentId: string) => (state: DocumentState) =>
+export const selectIsProcessing = (documentId: number) => (state: DocumentState) =>
   state.processingDocuments.has(documentId);
 
 export const selectProcessingDocumentsCount = (state: DocumentState) =>
   state.processingDocuments.size;
 
 export const selectDocumentsByStatus =
-  (projectId: string, status: DocumentStatus) => (state: DocumentState) => {
+  (projectId: number, status: DocumentStatus) => (state: DocumentState) => {
     const projectDocuments = state.documents[projectId] || [];
     return projectDocuments.filter((doc) => doc.processing_status === status);
   };

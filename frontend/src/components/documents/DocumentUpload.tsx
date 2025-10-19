@@ -74,61 +74,73 @@ export default function DocumentUpload() {
       }));
       setUploadingFiles(initialFiles);
 
-      // Upload files one by one (or in parallel if desired)
-      for (let i = 0; i < acceptedFiles.length; i++) {
-        const file = acceptedFiles[i];
+      try {
+        // Use actual API to upload documents
+        const { documentApi } = await import('@/lib/api');
 
-        try {
-          // Simulate upload progress (replace with actual API call)
-          await simulateUpload(file, (progress) => {
-            setUploadingFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, progress } : f)));
-          });
+        // Update progress during upload
+        setUploadingFiles((prev) => prev.map((f) => ({ ...f, progress: 50 })));
 
-          // Create mock document object (replace with actual API response)
-          const newDocument = {
-            id: `doc-${Date.now()}-${i}`,
+        const response = await documentApi.upload(currentProject.id, acceptedFiles);
+
+        // Mark files as uploaded
+        setUploadingFiles((prev) =>
+          prev.map((f) => ({ ...f, progress: 100, status: 'success' as const }))
+        );
+
+        // Add uploaded documents to store (they will be in PENDING/PROCESSING status)
+        response.uploaded.forEach((doc) => {
+          addDocument(currentProject.id, {
+            id: doc.id,
             project_id: currentProject.id,
-            filename: file.name,
-            file_type: file.type || 'application/octet-stream',
-            file_size: file.size,
-            upload_date: new Date().toISOString(),
-            processing_status: DocumentStatus.PROCESSING,
-            page_count: 0,
-            chunk_count: 0,
-          };
+            filename: doc.filename,
+            file_type: doc.file_type,
+            file_size: doc.file_size,
+            upload_date: doc.created_at,
+            processing_status: doc.status as DocumentStatus,
+            page_count: doc.page_count || 0,
+            chunk_count: doc.chunk_count || 0,
+          });
+        });
 
-          addDocument(currentProject.id, newDocument);
-
-          // Update file status
-          setUploadingFiles((prev) =>
-            prev.map((f, idx) => (idx === i ? { ...f, status: 'success' as const } : f))
-          );
-        } catch (error) {
-          setUploadingFiles((prev) =>
-            prev.map((f, idx) =>
-              idx === i
-                ? {
-                    ...f,
-                    status: 'error' as const,
-                    error: error instanceof Error ? error.message : 'Upload failed',
-                  }
-                : f
-            )
-          );
+        // Show errors for failed uploads
+        if (response.failed.length > 0) {
+          response.failed.forEach((failure: any) => {
+            toast({
+              title: 'Upload Failed',
+              description: `${failure.filename}: ${failure.error}`,
+              variant: 'destructive',
+            });
+          });
         }
+
+        // Clear uploaded files after a delay
+        setTimeout(() => {
+          setUploadingFiles([]);
+        }, 3000);
+
+        toast({
+          title: 'Upload Complete',
+          description: `${response.successful} file(s) uploaded successfully${response.failed_count > 0 ? `, ${response.failed_count} failed` : ''}`,
+        });
+      } catch (error) {
+        // Mark all as error
+        setUploadingFiles((prev) =>
+          prev.map((f) => ({
+            ...f,
+            status: 'error' as const,
+            error: error instanceof Error ? error.message : 'Upload failed',
+          }))
+        );
+
+        toast({
+          title: 'Upload Failed',
+          description: error instanceof Error ? error.message : 'Failed to upload documents',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsUploading(false);
       }
-
-      setIsUploading(false);
-
-      // Clear uploaded files after a delay
-      setTimeout(() => {
-        setUploadingFiles([]);
-      }, 3000);
-
-      toast({
-        title: 'Upload Complete',
-        description: `${acceptedFiles.length} file(s) uploaded successfully`,
-      });
     },
     [currentProject, addDocument, toast]
   );
@@ -224,19 +236,4 @@ export default function DocumentUpload() {
       )}
     </div>
   );
-}
-
-// Simulate upload progress (replace with actual API call)
-function simulateUpload(_file: File, onProgress: (progress: number) => void): Promise<void> {
-  return new Promise((resolve) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      onProgress(Math.min(progress, 100));
-      if (progress >= 100) {
-        clearInterval(interval);
-        setTimeout(resolve, 500);
-      }
-    }, 200);
-  });
 }

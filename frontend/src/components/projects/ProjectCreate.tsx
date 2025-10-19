@@ -21,7 +21,7 @@ import type { CreateProjectRequest } from '@/types';
 
 interface ProjectCreateProps {
   trigger?: React.ReactNode;
-  onProjectCreated?: (projectId: string) => void;
+  onProjectCreated?: (projectId: number) => void;
 }
 
 export default function ProjectCreate({ trigger, onProjectCreated }: ProjectCreateProps) {
@@ -50,19 +50,9 @@ export default function ProjectCreate({ trigger, onProjectCreated }: ProjectCrea
     setIsSubmitting(true);
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await api.post('/api/projects', formData);
-
-      // For now, create a mock project
-      const newProject = {
-        id: `project-${Date.now()}`,
-        name: formData.name,
-        description: formData.description,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        document_count: 0,
-        chat_count: 0,
-      };
+      // Call the actual API to create the project
+      const { projectApi } = await import('@/lib/api');
+      const newProject = await projectApi.create(formData);
 
       addProject(newProject);
 

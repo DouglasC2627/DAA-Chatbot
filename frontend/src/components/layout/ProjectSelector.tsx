@@ -25,7 +25,10 @@ export default function ProjectSelector() {
   }
 
   return (
-    <Select value={currentProject?.id || ''} onValueChange={(value) => setCurrentProject(value)}>
+    <Select
+      value={currentProject?.id?.toString() || ''}
+      onValueChange={(value) => setCurrentProject(Number(value))}
+    >
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Select a project">
           {currentProject ? (
@@ -40,7 +43,7 @@ export default function ProjectSelector() {
       </SelectTrigger>
       <SelectContent>
         {projects.map((project) => (
-          <SelectItem key={project.id} value={project.id}>
+          <SelectItem key={project.id} value={project.id.toString()}>
             <div className="flex items-center gap-2">
               <Folder className="h-4 w-4" />
               <div className="flex flex-col">

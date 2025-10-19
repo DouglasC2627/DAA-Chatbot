@@ -20,7 +20,7 @@ from services.project_service import project_service, ProjectServiceError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/projects", tags=["projects"])
+router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
 # Pydantic models for request/response

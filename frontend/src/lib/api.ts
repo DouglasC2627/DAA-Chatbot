@@ -28,12 +28,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // 30 seconds
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
-// Request interceptor for adding auth tokens
+// Request interceptor for adding auth tokens and Content-Type
 apiClient.interceptors.request.use(
   (config) => {
     // Add JWT token if available
@@ -41,6 +38,12 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Set Content-Type for JSON requests if not already set
+    if (config.data && !(config.data instanceof FormData) && !config.headers['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+
     return config;
   },
   (error) => {
@@ -69,44 +72,44 @@ apiClient.interceptors.response.use(
 export const projectApi = {
   // List all projects
   list: async (): Promise<Project[]> => {
-    const response = await apiClient.get<APIResponse<Project[]>>('/api/projects');
-    return response.data.data || [];
+    const response = await apiClient.get<Project[]>('/api/projects');
+    return response.data || [];
   },
 
   // Get project by ID
-  get: async (id: string): Promise<Project> => {
-    const response = await apiClient.get<APIResponse<Project>>(`/api/projects/${id}`);
-    if (!response.data.data) {
+  get: async (id: number): Promise<Project> => {
+    const response = await apiClient.get<Project>(`/api/projects/${id}`);
+    if (!response.data) {
       throw new Error('Project not found');
     }
-    return response.data.data;
+    return response.data;
   },
 
   // Create new project
   create: async (data: CreateProjectRequest): Promise<Project> => {
-    const response = await apiClient.post<APIResponse<Project>>('/api/projects', data);
-    if (!response.data.data) {
+    const response = await apiClient.post<Project>('/api/projects', data);
+    if (!response.data) {
       throw new Error('Failed to create project');
     }
-    return response.data.data;
+    return response.data;
   },
 
   // Update project
-  update: async (id: string, data: UpdateProjectRequest): Promise<Project> => {
-    const response = await apiClient.put<APIResponse<Project>>(`/api/projects/${id}`, data);
-    if (!response.data.data) {
+  update: async (id: number, data: UpdateProjectRequest): Promise<Project> => {
+    const response = await apiClient.put<Project>(`/api/projects/${id}`, data);
+    if (!response.data) {
       throw new Error('Failed to update project');
     }
-    return response.data.data;
+    return response.data;
   },
 
   // Delete project
-  delete: async (id: string): Promise<void> => {
+  delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/api/projects/${id}`);
   },
 
   // Export project
-  export: async (id: string): Promise<Blob> => {
+  export: async (id: number): Promise<Blob> => {
     const response = await apiClient.post(
       `/api/projects/${id}/export`,
       {},
@@ -135,50 +138,36 @@ export const projectApi = {
 
 export const documentApi = {
   // List documents for a project
-  list: async (projectId: string): Promise<Document[]> => {
-    const response = await apiClient.get<APIResponse<Document[]>>(
-      `/api/projects/${projectId}/documents`
-    );
-    return response.data.data || [];
+  list: async (projectId: number): Promise<any[]> => {
+    const response = await apiClient.get(`/api/projects/${projectId}/documents`);
+    return response.data || [];
   },
 
   // Get document by ID
-  get: async (id: string): Promise<Document> => {
-    const response = await apiClient.get<APIResponse<Document>>(`/api/documents/${id}`);
-    if (!response.data.data) {
-      throw new Error('Document not found');
-    }
-    return response.data.data;
+  get: async (id: number): Promise<any> => {
+    const response = await apiClient.get(`/api/documents/${id}`);
+    return response.data;
   },
 
   // Upload documents to a project
-  upload: async (projectId: string, files: File[]): Promise<BulkDocumentUploadResponse> => {
+  upload: async (projectId: number, files: File[]): Promise<BulkDocumentUploadResponse> => {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
     });
 
-    const response = await apiClient.post<APIResponse<BulkDocumentUploadResponse>>(
-      `/api/projects/${projectId}/documents/bulk`,
-      formData,
-      {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }
-    );
+    const response = await apiClient.post(`/api/projects/${projectId}/documents/bulk`, formData);
 
-    if (!response.data.data) {
-      throw new Error('Failed to upload documents');
-    }
-    return response.data.data;
+    return response.data;
   },
 
   // Delete document
-  delete: async (id: string): Promise<void> => {
+  delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/api/documents/${id}`);
   },
 
   // Get document content
-  getContent: async (id: string): Promise<string> => {
+  getContent: async (id: number): Promise<string> => {
     const response = await apiClient.get<APIResponse<{ content: string }>>(
       `/api/documents/${id}/content`
     );
@@ -186,7 +175,7 @@ export const documentApi = {
   },
 
   // Process uploaded documents
-  process: async (documentIds: string[]): Promise<void> => {
+  process: async (documentIds: number[]): Promise<void> => {
     await apiClient.post('/api/documents/process', { document_ids: documentIds });
   },
 };
@@ -197,13 +186,13 @@ export const documentApi = {
 
 export const chatApi = {
   // List chats for a project
-  list: async (projectId: string): Promise<Chat[]> => {
+  list: async (projectId: number): Promise<Chat[]> => {
     const response = await apiClient.get<APIResponse<Chat[]>>(`/api/projects/${projectId}/chats`);
     return response.data.data || [];
   },
 
   // Get chat by ID
-  get: async (id: string): Promise<Chat> => {
+  get: async (id: number): Promise<Chat> => {
     const response = await apiClient.get<APIResponse<Chat>>(`/api/chats/${id}`);
     if (!response.data.data) {
       throw new Error('Chat not found');
@@ -212,7 +201,7 @@ export const chatApi = {
   },
 
   // Create new chat
-  create: async (projectId: string, title?: string): Promise<Chat> => {
+  create: async (projectId: number, title?: string): Promise<Chat> => {
     const response = await apiClient.post<APIResponse<Chat>>(`/api/projects/${projectId}/chats`, {
       title: title || 'New Chat',
     });
@@ -223,18 +212,18 @@ export const chatApi = {
   },
 
   // Delete chat
-  delete: async (id: string): Promise<void> => {
+  delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/api/chats/${id}`);
   },
 
   // Get chat history (messages)
-  getHistory: async (chatId: string): Promise<Message[]> => {
+  getHistory: async (chatId: number): Promise<Message[]> => {
     const response = await apiClient.get<APIResponse<Message[]>>(`/api/chats/${chatId}`);
     return response.data.data || [];
   },
 
   // Send message (non-streaming)
-  sendMessage: async (chatId: string, data: SendMessageRequest): Promise<SendMessageResponse> => {
+  sendMessage: async (chatId: number, data: SendMessageRequest): Promise<SendMessageResponse> => {
     const response = await apiClient.post<APIResponse<SendMessageResponse>>(
       `/api/chats/${chatId}/messages`,
       data
@@ -246,7 +235,7 @@ export const chatApi = {
   },
 
   // Export chat
-  export: async (id: string, format: 'md' | 'json' | 'pdf' = 'md'): Promise<Blob> => {
+  export: async (id: number, format: 'md' | 'json' | 'pdf' = 'md'): Promise<Blob> => {
     const response = await apiClient.post(
       `/api/chats/${id}/export`,
       { format },

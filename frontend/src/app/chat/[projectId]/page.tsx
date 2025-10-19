@@ -18,19 +18,21 @@ export default function ChatPage({ params }: ChatPageProps) {
   const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
 
-  const project = projects.find((p) => p.id === params.projectId);
+  // Convert URL param to number for comparison
+  const projectIdNum = Number(params.projectId);
+  const project = projects.find((p) => p.id === projectIdNum);
 
   useEffect(() => {
     // Set the current project if it exists
-    if (project && currentProjectId !== params.projectId) {
-      setCurrentProject(params.projectId);
+    if (project && currentProjectId !== projectIdNum) {
+      setCurrentProject(projectIdNum);
     }
 
     // Redirect to projects page if project doesn't exist
     if (!project && projects.length > 0) {
       router.push('/projects');
     }
-  }, [params.projectId, project, projects, currentProjectId, setCurrentProject, router]);
+  }, [projectIdNum, project, projects, currentProjectId, setCurrentProject, router]);
 
   // Show loading state while checking project
   if (!project) {
@@ -44,5 +46,5 @@ export default function ChatPage({ params }: ChatPageProps) {
     );
   }
 
-  return <ChatInterface projectId={params.projectId} />;
+  return <ChatInterface projectId={projectIdNum} />;
 }
