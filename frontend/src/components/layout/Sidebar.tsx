@@ -58,7 +58,7 @@ export default function Sidebar() {
         <div className="border-t pt-4">
           <div className="text-xs text-muted-foreground">
             <p className="font-medium">DAA Chatbot</p>
-            <p>Version 1.0.0</p>
+            <p>Version 0.1.0</p>
           </div>
         </div>
       </div>
