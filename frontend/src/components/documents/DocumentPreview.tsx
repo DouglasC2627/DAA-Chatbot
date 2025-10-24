@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Download, FileText, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
+import { documentApi } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface DocumentPreviewProps {
   document: Document;
@@ -51,14 +53,64 @@ const formatFileSize = (bytes: number): string => {
 };
 
 export default function DocumentPreview({ document, open, onClose }: DocumentPreviewProps) {
-  const handleDownload = () => {
-    // TODO: Implement actual download
-    console.log('Download document:', document.id);
+  const { toast } = useToast();
+
+  const handleDownload = async () => {
+    try {
+      toast({
+        title: 'Download Started',
+        description: `Downloading "${document.filename}"`,
+      });
+
+      const blob = await documentApi.download(document.id);
+
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = document.filename;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Download Complete',
+        description: `"${document.filename}" has been downloaded`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Download Failed',
+        description: error instanceof Error ? error.message : 'Failed to download document',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleOpenExternal = () => {
-    // TODO: Implement opening in external viewer
-    console.log('Open document externally:', document.id);
+  const handleOpenExternal = async () => {
+    try {
+      const blob = await documentApi.download(document.id);
+      const url = window.URL.createObjectURL(blob);
+
+      // Open in new tab
+      window.open(url, '_blank');
+
+      // Clean up after a delay to ensure the file loads
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
+
+      toast({
+        title: 'Opening Document',
+        description: `Opening "${document.filename}" in new tab`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Failed to Open',
+        description: error instanceof Error ? error.message : 'Failed to open document',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

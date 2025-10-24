@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Project, UpdateProjectRequest } from '@/types';
+import { projectApi } from '@/lib/api';
 
 interface ProjectSettingsProps {
   project: Project;
@@ -56,10 +57,11 @@ export default function ProjectSettings({ project, open, onClose }: ProjectSetti
     setIsSubmitting(true);
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await api.put(`/api/projects/${project.id}`, formData);
+      // Call the backend API to update the project
+      const updatedProject = await projectApi.update(project.id, formData);
 
-      updateProject(project.id, formData);
+      // Update local store after successful API call
+      updateProject(project.id, updatedProject);
 
       toast({
         title: 'Success',
