@@ -113,11 +113,35 @@ export default function DocumentList() {
   };
 
   const handleDownload = async (document: Document) => {
-    toast({
-      title: 'Download Started',
-      description: `Downloading "${document.filename}"`,
-    });
-    // TODO: Implement actual download using documentApi
+    try {
+      toast({
+        title: 'Download Started',
+        description: `Downloading "${document.filename}"`,
+      });
+
+      const blob = await documentApi.download(document.id);
+
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = document.filename;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Download Complete',
+        description: `"${document.filename}" has been downloaded`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Download Failed',
+        description: error instanceof Error ? error.message : 'Failed to download document',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handlePreview = (document: Document) => {

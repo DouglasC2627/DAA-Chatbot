@@ -178,6 +178,14 @@ export const documentApi = {
   process: async (documentIds: number[]): Promise<void> => {
     await apiClient.post('/api/documents/process', { document_ids: documentIds });
   },
+
+  // Download document file
+  download: async (id: number): Promise<Blob> => {
+    const response = await apiClient.get(`/api/documents/${id}/download`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 // ============================================================================

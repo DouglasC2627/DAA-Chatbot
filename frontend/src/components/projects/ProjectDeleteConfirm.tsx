@@ -14,6 +14,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { Project } from '@/types';
 import { AlertTriangle } from 'lucide-react';
+import { projectApi } from '@/lib/api';
 
 interface ProjectDeleteConfirmProps {
   project: Project;
@@ -34,9 +35,10 @@ export default function ProjectDeleteConfirm({
     setIsDeleting(true);
 
     try {
-      // TODO: Replace with actual API call
-      // await api.delete(`/api/projects/${project.id}`);
+      // Call the backend API to delete the project
+      await projectApi.delete(project.id);
 
+      // Update local store after successful API call
       deleteProject(project.id);
 
       toast({
@@ -45,12 +47,25 @@ export default function ProjectDeleteConfirm({
       });
 
       onClose();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete project',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      // If project doesn't exist in backend (404), remove it from frontend anyway
+      if (error?.response?.status === 404) {
+        deleteProject(project.id);
+
+        toast({
+          title: 'Project Removed',
+          description: `Project "${project.name}" was not found in the database and has been removed from the list`,
+        });
+
+        onClose();
+      } else {
+        // Other errors - show error message
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to delete project',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsDeleting(false);
     }
