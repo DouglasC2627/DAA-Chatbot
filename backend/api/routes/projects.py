@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from services.project_service import project_service, ProjectServiceError
+from models.base import format_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -131,8 +132,8 @@ async def create_project(
             document_count=project.document_count,
             total_chunks=project.total_chunks,
             settings=project.settings,
-            created_at=project.created_at.isoformat() if project.created_at else None,
-            updated_at=project.updated_at.isoformat() if project.updated_at else None
+            created_at=format_datetime(project.created_at),
+            updated_at=format_datetime(project.updated_at)
         )
 
     except ProjectServiceError as e:
@@ -234,8 +235,8 @@ async def get_project(
             document_count=project.document_count,
             total_chunks=project.total_chunks,
             settings=project.settings,
-            created_at=project.created_at.isoformat() if project.created_at else None,
-            updated_at=project.updated_at.isoformat() if project.updated_at else None
+            created_at=format_datetime(project.created_at),
+            updated_at=format_datetime(project.updated_at)
         )
 
     except HTTPException:
@@ -292,8 +293,8 @@ async def update_project(
             document_count=project.document_count,
             total_chunks=project.total_chunks,
             settings=project.settings,
-            created_at=project.created_at.isoformat() if project.created_at else None,
-            updated_at=project.updated_at.isoformat() if project.updated_at else None
+            created_at=format_datetime(project.created_at),
+            updated_at=format_datetime(project.updated_at)
         )
 
     except HTTPException:
@@ -556,8 +557,8 @@ async def import_project(
             document_count=project.document_count,
             total_chunks=project.total_chunks,
             settings=project.settings,
-            created_at=project.created_at.isoformat() if project.created_at else None,
-            updated_at=project.updated_at.isoformat() if project.updated_at else None
+            created_at=format_datetime(project.created_at),
+            updated_at=format_datetime(project.updated_at)
         )
 
     except ProjectServiceError as e:

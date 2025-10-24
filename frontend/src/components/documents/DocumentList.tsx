@@ -8,7 +8,7 @@ import DocumentPreview from './DocumentPreview';
 import { Document, DocumentStatus } from '@/types';
 import { FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useDocumentUpdates } from '@/lib/websocket';
+import { useDocumentUpdates, useWebSocketConnection, useProjectRoom } from '@/lib/websocket';
 import { documentApi } from '@/lib/api';
 
 export default function DocumentList() {
@@ -21,6 +21,10 @@ export default function DocumentList() {
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Connect to WebSocket and join project room
+  useWebSocketConnection({ autoConnect: true });
+  useProjectRoom(currentProject?.id || null);
 
   // Get documents for current project
   const projectDocuments = currentProject ? allDocuments[currentProject.id] || [] : [];

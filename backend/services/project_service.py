@@ -23,6 +23,7 @@ from sqlalchemy.orm import selectinload
 from models.project import Project
 from models.document import Document
 from models.chat import Chat
+from models.base import format_datetime
 from core.vectorstore import vector_store
 from core.config import settings
 
@@ -459,8 +460,8 @@ class ProjectService:
                 'total_size_bytes': total_size,
                 'chat_count': len(active_chats),
                 'message_count': total_messages,
-                'created_at': project.created_at.isoformat() if project.created_at else None,
-                'updated_at': project.updated_at.isoformat() if project.updated_at else None,
+                'created_at': format_datetime(project.created_at),
+                'updated_at': format_datetime(project.updated_at),
                 'folder_path': await self.get_project_folder(db, project_id)
             }
 
@@ -512,7 +513,7 @@ class ProjectService:
                     'name': project.name,
                     'description': project.description,
                     'settings': json.loads(project.settings) if project.settings else {},
-                    'created_at': project.created_at.isoformat() if project.created_at else None
+                    'created_at': format_datetime(project.created_at)
                 }
             }
 
@@ -533,7 +534,7 @@ class ProjectService:
                     {
                         'title': chat.title,
                         'message_count': chat.message_count,
-                        'created_at': chat.created_at.isoformat() if chat.created_at else None
+                        'created_at': format_datetime(chat.created_at)
                     }
                     for chat in project.chats
                     if not chat.deleted_at

@@ -10,6 +10,7 @@ import { Upload, File, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { DocumentStatus } from '@/types';
+import { useWebSocketConnection, useProjectRoom } from '@/lib/websocket';
 
 interface UploadingFile {
   file: File;
@@ -38,6 +39,10 @@ export default function DocumentUpload() {
   const currentProject = useProjectStore(selectCurrentProject);
   const addDocument = useDocumentStore((state) => state.addDocument);
   const { toast } = useToast();
+
+  // Connect to WebSocket and join project room for real-time status updates
+  useWebSocketConnection({ autoConnect: true });
+  useProjectRoom(currentProject?.id || null);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], rejectedFiles: any[]) => {

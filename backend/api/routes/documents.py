@@ -40,6 +40,7 @@ from core.vectorstore import vector_store
 from core.chunking import chunk_text
 from models.document import Document, DocumentType, DocumentStatus
 from models.project import Project
+from models.base import format_datetime
 from services.document_processor import DocumentProcessor, DocumentProcessingError
 from services.file_storage import FileStorageService
 from api.websocket.chat_ws import notify_document_processing
@@ -679,8 +680,8 @@ async def update_document_metadata(
             word_count=document.word_count,
             chunk_count=document.chunk_count,
             error_message=document.error_message,
-            created_at=document.created_at.isoformat(),
-            updated_at=document.updated_at.isoformat()
+            created_at=format_datetime(document.created_at),
+            updated_at=format_datetime(document.updated_at)
         )
 
     except HTTPException:

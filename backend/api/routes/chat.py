@@ -22,6 +22,7 @@ import json
 from core.database import get_db
 from services.chat_service import chat_service, ChatServiceError
 from models.message import MessageRole
+from models.base import format_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -130,8 +131,8 @@ async def create_chat(
             project_id=chat.project_id,
             title=chat.title,
             message_count=chat.message_count,
-            created_at=chat.created_at.isoformat(),
-            updated_at=chat.updated_at.isoformat()
+            created_at=format_datetime(chat.created_at),
+            updated_at=format_datetime(chat.updated_at)
         )
 
     except ChatServiceError as e:
@@ -176,7 +177,7 @@ async def get_chat(
             content=msg.content,
             sources=msg.get_sources() if msg.has_sources else None,
             model_name=msg.model_name,
-            created_at=msg.created_at.isoformat()
+            created_at=format_datetime(msg.created_at)
         )
         for msg in chat.messages
     ]
@@ -230,8 +231,8 @@ async def update_chat(
             project_id=chat.project_id,
             title=chat.title,
             message_count=chat.message_count,
-            created_at=chat.created_at.isoformat(),
-            updated_at=chat.updated_at.isoformat()
+            created_at=format_datetime(chat.created_at),
+            updated_at=format_datetime(chat.updated_at)
         )
 
     except ChatServiceError as e:
@@ -298,8 +299,8 @@ async def list_chats(
             project_id=chat.project_id,
             title=chat.title,
             message_count=chat.message_count,
-            created_at=chat.created_at.isoformat(),
-            updated_at=chat.updated_at.isoformat()
+            created_at=format_datetime(chat.created_at),
+            updated_at=format_datetime(chat.updated_at)
         )
         for chat in chats
     ]
@@ -432,7 +433,7 @@ async def get_messages(
             content=msg.content,
             sources=msg.get_sources() if msg.has_sources else None,
             model_name=msg.model_name,
-            created_at=msg.created_at.isoformat()
+            created_at=format_datetime(msg.created_at)
         )
         for msg in chat.messages
     ]
@@ -470,8 +471,8 @@ async def search_chats(
             project_id=chat.project_id,
             title=chat.title,
             message_count=chat.message_count,
-            created_at=chat.created_at.isoformat(),
-            updated_at=chat.updated_at.isoformat()
+            created_at=format_datetime(chat.created_at),
+            updated_at=format_datetime(chat.updated_at)
         )
         for chat in chats
     ]
