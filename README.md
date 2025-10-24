@@ -52,6 +52,21 @@ ollama pull nomic-embed-text
 
 ### 2. Clone and Setup Backend
 
+#### Option A: Automated Setup (Recommended)
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd daa-chatbot/backend
+
+# Run automated setup script
+./scripts/setup.sh
+
+# Start the backend server
+source venv/bin/activate
+uvicorn api.main:socket_app --reload
+```
+
+#### Option B: Manual Setup
 ```bash
 # Clone the repository
 git clone <your-repo-url>
@@ -65,6 +80,15 @@ pip install -r requirements.txt
 
 # Create .env file
 cp .env.example .env  # Edit with your settings
+
+# **IMPORTANT: Run database migrations**
+alembic upgrade head
+
+# Initialize database with default settings
+python scripts/init_db.py
+
+# Verify setup (optional but recommended)
+python scripts/check_setup.py
 
 # Run backend server (with WebSocket support)
 uvicorn api.main:socket_app --reload
@@ -99,6 +123,13 @@ source venv/bin/activate
 
 # Install development dependencies
 pip install -r requirements.txt
+
+# Run database migrations (after model changes)
+alembic revision --autogenerate -m "description"
+alembic upgrade head
+
+# Verify setup before starting
+python scripts/check_setup.py
 
 # Run with hot reload (with WebSocket support)
 uvicorn api.main:socket_app --reload --host 0.0.0.0 --port 8000
@@ -261,6 +292,18 @@ docker-compose down
 
 ## Common Issues
 
+### Database Tables Missing (400 Bad Request on Project Creation)
+**Symptom**: API returns 400 error when creating projects, or server fails to start with "Missing tables" error.
+
+**Solution**:
+```bash
+cd backend
+source venv/bin/activate
+alembic upgrade head
+```
+
+The server now includes startup validation that will prevent it from starting if migrations haven't been run.
+
 ### Ollama Connection Error
 - Ensure Ollama is running: `ollama serve`
 - Check if models are pulled: `ollama list`
@@ -272,6 +315,20 @@ docker-compose down
 ### Module Not Found
 - Backend: Ensure virtual environment is activated
 - Frontend: Run `npm install`
+
+### Setup Verification
+Run the pre-flight check script to verify your backend setup:
+```bash
+cd backend
+source venv/bin/activate
+python scripts/check_setup.py
+```
+
+This will check:
+- Database tables exist
+- Storage directories are created
+- Configuration files are present
+- Ollama connection (optional)
 
 ## Contributing
 
