@@ -389,8 +389,8 @@ async def upload_document(
                 word_count=document.word_count,
                 chunk_count=document.chunk_count,
                 error_message=document.error_message,
-                created_at=document.created_at.isoformat(),
-                updated_at=document.updated_at.isoformat()
+                created_at=format_datetime(document.created_at),
+                updated_at=format_datetime(document.updated_at)
             ),
             message="Document uploaded successfully and queued for processing"
         )
@@ -461,8 +461,8 @@ async def list_documents(
                 word_count=doc.word_count,
                 chunk_count=doc.chunk_count,
                 error_message=doc.error_message,
-                created_at=doc.created_at.isoformat(),
-                updated_at=doc.updated_at.isoformat()
+                created_at=format_datetime(doc.created_at),
+                updated_at=format_datetime(doc.updated_at)
             )
             for doc in documents
         ]
@@ -517,8 +517,8 @@ async def get_document(
         word_count=document.word_count,
         chunk_count=document.chunk_count,
         error_message=document.error_message,
-        created_at=document.created_at.isoformat(),
-        updated_at=document.updated_at.isoformat()
+        created_at=format_datetime(document.created_at),
+        updated_at=format_datetime(document.updated_at)
     )
 
 
@@ -822,8 +822,8 @@ async def bulk_upload_documents(
                 word_count=document.word_count,
                 chunk_count=document.chunk_count,
                 error_message=document.error_message,
-                created_at=document.created_at.isoformat(),
-                updated_at=document.updated_at.isoformat()
+                created_at=format_datetime(document.created_at),
+                updated_at=format_datetime(document.updated_at)
             ))
 
             logger.info(f"Bulk upload: queued {file.filename} for processing")
@@ -981,8 +981,8 @@ async def search_documents(
                 word_count=doc.word_count,
                 chunk_count=doc.chunk_count,
                 error_message=doc.error_message,
-                created_at=doc.created_at.isoformat(),
-                updated_at=doc.updated_at.isoformat()
+                created_at=format_datetime(doc.created_at),
+                updated_at=format_datetime(doc.updated_at)
             )
             for doc in documents
         ]
