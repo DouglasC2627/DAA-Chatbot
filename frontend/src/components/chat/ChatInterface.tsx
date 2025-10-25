@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjectStore, selectProjects } from '@/stores/projectStore';
 import { useChatStore, selectCurrentChat, selectCurrentMessages } from '@/stores/chatStore';
@@ -11,6 +11,9 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Settings, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useWebSocketConnection, useProjectRoom, useChatStream } from '@/lib/websocket';
+import { chatApi } from '@/lib/api';
+import type { SourceDocument } from '@/lib/websocket';
 
 interface ChatInterfaceProps {
   projectId: number;
@@ -20,6 +23,9 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [streamingSources, setStreamingSources] = useState<SourceDocument[]>([]);
+  const assistantMessageIdRef = useRef<number | null>(null);
 
   // Get project details - use stable selector
   const projects = useProjectStore(selectProjects);
@@ -31,37 +37,131 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
   const setCurrentChat = useChatStore((state) => state.setCurrentChat);
   const addChat = useChatStore((state) => state.addChat);
   const addMessage = useChatStore((state) => state.addMessage);
-  const chats = useChatStore((state) => state.chats);
+  const updateMessage = useChatStore((state) => state.updateMessage);
+
+  // WebSocket connection
+  const { isConnected } = useWebSocketConnection({ autoConnect: true });
+
+  // Join project room when connected
+  useProjectRoom(isConnected ? projectId : null);
 
   // Initialize or find chat for this project
   useEffect(() => {
-    if (!project) return;
+    const initChat = async () => {
+      if (!project) return;
 
-    // Find existing chat for this project
-    const projectChat = chats.find((chat) => chat.project_id === projectId);
+      try {
+        // Fetch existing chats from backend for this project
+        const existingChats = await chatApi.list(projectId);
 
-    if (projectChat) {
-      setCurrentChat(projectChat.id);
-    } else {
-      // Create a new chat for this project (mock - will be replaced with API call)
-      const newChat = {
-        id: Date.now(), // Use timestamp as numeric ID
-        project_id: projectId,
-        title: `Chat with ${project.name}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        message_count: 0,
-      };
+        if (existingChats && existingChats.length > 0) {
+          // Use the most recent chat
+          const mostRecentChat = existingChats[0];
 
-      addChat(newChat);
-      setCurrentChat(newChat.id);
+          // Update store with backend chat
+          addChat(mostRecentChat);
+          setCurrentChat(mostRecentChat.id);
 
-      toast({
-        title: 'Chat Started',
-        description: `Started new chat for ${project.name}`,
+          // Load existing messages for this chat
+          try {
+            const existingMessages = await chatApi.getMessages(mostRecentChat.id);
+            // Add messages to store
+            existingMessages.forEach((msg) => {
+              addMessage(mostRecentChat.id, msg);
+            });
+            console.log(`Loaded ${existingMessages.length} existing messages for chat:`, mostRecentChat.id);
+          } catch (msgError) {
+            console.error('Failed to load messages:', msgError);
+            // Continue even if messages fail to load
+          }
+
+          console.log('Using existing chat:', mostRecentChat.id);
+        } else {
+          // No existing chats, create a new one via API
+          const newChat = await chatApi.create(projectId, `Chat with ${project.name}`);
+          addChat(newChat);
+          setCurrentChat(newChat.id);
+
+          toast({
+            title: 'Chat Started',
+            description: `Started new chat for ${project.name}`,
+          });
+
+          console.log('Created new chat:', newChat.id);
+        }
+      } catch (error) {
+        console.error('Failed to initialize chat:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to initialize chat session. Please refresh and try again.',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    initChat();
+    // Only depend on projectId and project to avoid re-running when chats change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, project]);
+
+  // Chat stream handlers
+  const handleToken = useCallback((token: string) => {
+    setStreamingContent((prev) => prev + token);
+  }, []);
+
+  const handleSources = useCallback((sources: SourceDocument[]) => {
+    setStreamingSources(sources);
+  }, []);
+
+  const handleComplete = useCallback(() => {
+    // Finalize the assistant message with complete content
+    if (assistantMessageIdRef.current && currentChatId) {
+      updateMessage(currentChatId, assistantMessageIdRef.current, {
+        content: streamingContent,
+        sources: streamingSources.map((src) => ({
+          id: src.id,
+          content: src.content,
+          metadata: src.metadata,
+          score: src.score,
+          document_id: src.metadata.document_id,
+          document_name: src.metadata.filename || 'Unknown',
+          chunk_index: src.metadata.chunk_index,
+          page_number: src.metadata.page,
+          similarity_score: src.score,
+        })),
       });
     }
-  }, [projectId, project, chats, setCurrentChat, addChat, toast]);
+
+    // Reset streaming state
+    setIsGenerating(false);
+    setStreamingContent('');
+    setStreamingSources([]);
+    assistantMessageIdRef.current = null;
+  }, [currentChatId, streamingContent, streamingSources, updateMessage]);
+
+  const handleError = useCallback((error: string) => {
+    console.error('Chat stream error:', error);
+    toast({
+      title: 'Error',
+      description: error || 'Failed to generate response',
+      variant: 'destructive',
+    });
+    setIsGenerating(false);
+    setStreamingContent('');
+    setStreamingSources([]);
+    assistantMessageIdRef.current = null;
+  }, [toast]);
+
+  // Use chat stream hook
+  const { sendMessage: sendWSMessage } = useChatStream(
+    currentChatId || 0,
+    {
+      onToken: handleToken,
+      onSources: handleSources,
+      onComplete: handleComplete,
+      onError: handleError,
+    }
+  );
 
   const handleSendMessage = async (content: string) => {
     if (!currentChatId || !project) {
@@ -73,10 +173,19 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
       return;
     }
 
+    if (!isConnected) {
+      toast({
+        title: 'Connection Error',
+        description: 'WebSocket not connected. Please wait and try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      // Add user message (mock - will be replaced with API call)
+      // Add user message
       const userMessage = {
-        id: Date.now(), // Use timestamp as numeric ID
+        id: Date.now(),
         chat_id: currentChatId,
         role: MessageRole.USER,
         content,
@@ -85,32 +194,31 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
 
       addMessage(currentChatId, userMessage);
 
-      // Set generating state
-      setIsGenerating(true);
-
-      // Simulate assistant response (will be replaced with actual API call)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Create placeholder assistant message for streaming
+      const assistantMessageId = Date.now() + 1;
+      assistantMessageIdRef.current = assistantMessageId;
 
       const assistantMessage = {
-        id: Date.now() + 1, // Ensure unique ID by adding 1
+        id: assistantMessageId,
         chat_id: currentChatId,
         role: MessageRole.ASSISTANT,
-        content: `I received your message: "${content}". This is a mock response. Once the backend is connected, I'll provide real AI-powered responses based on your documents.`,
-        sources: [
-          {
-            document_id: 1, // Use numeric ID
-            document_name: 'Sample Document.pdf',
-            chunk_index: 0,
-            page_number: 1,
-            content: 'Sample content from document',
-            similarity_score: 0.95,
-            section: 'Introduction',
-          },
-        ],
+        content: '',
         created_at: new Date().toISOString(),
       };
 
       addMessage(currentChatId, assistantMessage);
+
+      // Set generating state
+      setIsGenerating(true);
+      setStreamingContent('');
+      setStreamingSources([]);
+
+      // Send message via WebSocket
+      sendWSMessage(content, {
+        include_history: true,
+        temperature: 0.7,
+      });
+
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -118,10 +226,18 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
         description: 'Failed to send message. Please try again.',
         variant: 'destructive',
       });
-    } finally {
       setIsGenerating(false);
     }
   };
+
+  // Update streaming message in real-time
+  useEffect(() => {
+    if (isGenerating && assistantMessageIdRef.current && currentChatId && streamingContent) {
+      updateMessage(currentChatId, assistantMessageIdRef.current, {
+        content: streamingContent,
+      });
+    }
+  }, [streamingContent, isGenerating, currentChatId, updateMessage]);
 
   if (!project) {
     return (
