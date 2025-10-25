@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 import { Message as MessageType } from '@/types';
 import Message from './Message';
 import { MessageSquare } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MessageListProps {
   messages: MessageType[];
@@ -13,18 +12,17 @@ interface MessageListProps {
 
 export default function MessageList({ messages, isLoading = false }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages.length]);
+  }, [messages.length, isLoading]);
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="h-full flex items-center justify-center p-8">
         <div className="text-center max-w-md">
           <div className="mb-4 flex justify-center">
             <div className="rounded-full bg-primary/10 p-6">
@@ -49,7 +47,7 @@ export default function MessageList({ messages, isLoading = false }: MessageList
   }
 
   return (
-    <ScrollArea className="flex-1 px-4 py-6">
+    <div className="px-4 py-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {messages.map((message) => (
           <Message key={message.id} message={message} />
@@ -83,6 +81,6 @@ export default function MessageList({ messages, isLoading = false }: MessageList
         {/* Scroll anchor */}
         <div ref={bottomRef} />
       </div>
-    </ScrollArea>
+    </div>
   );
 }

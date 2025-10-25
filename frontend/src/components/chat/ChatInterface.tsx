@@ -255,9 +255,9 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full">
-      {/* Chat Header */}
-      <div className="border-b bg-background px-4 py-2">
+    <div className="flex flex-col h-screen w-full overflow-hidden">
+      {/* Chat Header - Fixed at top */}
+      <div className="flex-shrink-0 border-b bg-background px-4 py-2 z-10">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
@@ -286,16 +286,20 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
         </div>
       </div>
 
-      {/* Messages Area */}
-      <MessageList messages={messages} isLoading={isGenerating} />
+      {/* Messages Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <MessageList messages={messages} isLoading={isGenerating} />
+      </div>
 
-      {/* Input Area */}
-      <MessageInput
-        onSend={handleSendMessage}
-        disabled={!currentChatId}
-        isLoading={isGenerating}
-        placeholder={`Ask questions about ${project.name}...`}
-      />
+      {/* Input Area - Fixed at bottom */}
+      <div className="flex-shrink-0 border-t bg-background z-10">
+        <MessageInput
+          onSend={handleSendMessage}
+          disabled={!currentChatId}
+          isLoading={isGenerating}
+          placeholder={`Ask questions about ${project.name}...`}
+        />
+      </div>
     </div>
   );
 }
