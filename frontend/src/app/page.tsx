@@ -1,6 +1,7 @@
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
 import {
   LaptopMinimalCheck,
   FileText,
@@ -21,15 +22,13 @@ export default function Home() {
             Your fully-local, privacy-focused RAG chatbot powered by Ollama. Chat with your
             documents securely on your machine.
           </p>
-          <div className="flex gap-4 justify-center pt-4">
-            <Button size="lg">
-              <Folder className="mr-2 h-5 w-5" />
-              Create Project
-            </Button>
-            <Button variant="outline" size="lg">
-              <FileText className="mr-2 h-5 w-5" />
-              Upload Documents
-            </Button>
+          <div className="flex justify-center pt-4">
+            <Link href="/projects">
+              <Button size="lg">
+                <Folder className="mr-2 h-5 w-5" />
+                Create Project
+              </Button>
+            </Link>
           </div>
         </section>
 

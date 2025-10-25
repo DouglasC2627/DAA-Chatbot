@@ -24,10 +24,6 @@ export default function Sidebar() {
         {/* Project Selector */}
         <div className="space-y-2">
           <ProjectSelector />
-          <Button className="w-full" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            New Project
-          </Button>
         </div>
 
         {/* Navigation Menu */}
