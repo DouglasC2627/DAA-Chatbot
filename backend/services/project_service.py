@@ -26,6 +26,7 @@ from models.chat import Chat
 from models.base import format_datetime
 from core.vectorstore import vector_store
 from core.config import settings
+from services.file_storage import file_storage_service
 
 logger = logging.getLogger(__name__)
 
@@ -297,9 +298,24 @@ class ProjectService:
 
             if hard_delete:
                 # Delete ChromaDB collection
-                vector_store.delete_collection(project_id)
+                try:
+                    vector_store.delete_collection(project_id)
+                    logger.info(f"Deleted ChromaDB collection for project {project_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete ChromaDB collection: {str(e)}")
 
-                # Delete project folder if exists
+                # Delete all uploaded documents for this project
+                try:
+                    # Use the project's storage folder name
+                    folder_name = project.generate_storage_folder_name()
+                    files_deleted = file_storage_service.cleanup_project_files(
+                        folder_name=folder_name
+                    )
+                    logger.info(f"Deleted {files_deleted} uploaded files for project {project_id} (folder: {folder_name})")
+                except Exception as e:
+                    logger.warning(f"Failed to cleanup project files: {str(e)}")
+
+                # Delete project folder if exists (external folder link)
                 await self._delete_project_folder(project)
 
                 # Hard delete from database

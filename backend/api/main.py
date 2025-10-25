@@ -13,7 +13,7 @@ from sqlalchemy import inspect
 sys.path.append(str(Path(__file__).parent.parent))
 
 from core.config import settings
-from api.routes import llm, chat, documents, projects
+from api.routes import llm, chat, documents, projects, maintenance
 from api.websocket.chat_ws import sio
 from core.database import sync_engine, async_engine
 
@@ -100,6 +100,7 @@ app.include_router(llm.router)
 app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(projects.router)
+app.include_router(maintenance.router)
 
 
 class HealthResponse(BaseModel):

@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Project, UpdateProjectRequest } from '@/types';
 import { projectApi } from '@/lib/api';
@@ -24,12 +25,37 @@ interface ProjectSettingsProps {
   onClose: () => void;
 }
 
+/**
+ * Validate project name for filesystem safety
+ * Allows: alphanumeric, spaces, hyphens, underscores
+ * Returns array of invalid characters found
+ */
+function validateProjectName(name: string): string[] {
+  const invalidChars: string[] = [];
+  const allowedPattern = /^[a-zA-Z0-9\s\-_]+$/;
+
+  if (!allowedPattern.test(name)) {
+    // Find specific invalid characters
+    for (const char of name) {
+      if (!/[a-zA-Z0-9\s\-_]/.test(char) && !invalidChars.includes(char)) {
+        invalidChars.push(char);
+      }
+    }
+  }
+
+  return invalidChars;
+}
+
 export default function ProjectSettings({ project, open, onClose }: ProjectSettingsProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<UpdateProjectRequest>({
     name: project.name,
     description: project.description || '',
   });
+  const [nameValidation, setNameValidation] = useState<{
+    isValid: boolean;
+    invalidChars: string[];
+  }>({ isValid: true, invalidChars: [] });
 
   const updateProject = useProjectStore((state) => state.updateProject);
   const { toast } = useToast();
@@ -40,6 +66,12 @@ export default function ProjectSettings({ project, open, onClose }: ProjectSetti
       name: project.name,
       description: project.description || '',
     });
+    // Validate initial name
+    const invalidChars = validateProjectName(project.name);
+    setNameValidation({
+      isValid: invalidChars.length === 0,
+      invalidChars,
+    });
   }, [project]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +81,16 @@ export default function ProjectSettings({ project, open, onClose }: ProjectSetti
       toast({
         title: 'Validation Error',
         description: 'Project name is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check for invalid characters
+    if (!nameValidation.isValid) {
+      toast({
+        title: 'Validation Error',
+        description: `Project name contains invalid characters: ${nameValidation.invalidChars.join(', ')}`,
         variant: 'destructive',
       });
       return;
@@ -82,6 +124,15 @@ export default function ProjectSettings({ project, open, onClose }: ProjectSetti
 
   const handleInputChange = (field: keyof UpdateProjectRequest, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+    // Validate project name
+    if (field === 'name') {
+      const invalidChars = validateProjectName(value);
+      setNameValidation({
+        isValid: invalidChars.length === 0,
+        invalidChars,
+      });
+    }
   };
 
   return (
@@ -101,7 +152,22 @@ export default function ProjectSettings({ project, open, onClose }: ProjectSetti
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 required
                 autoFocus
+                className={!nameValidation.isValid && formData.name ? 'border-red-500' : ''}
               />
+              {!nameValidation.isValid && formData.name && (
+                <div className="flex items-start gap-2 text-sm text-red-500">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Invalid characters detected</p>
+                    <p className="text-xs mt-1">
+                      Found: {nameValidation.invalidChars.map(c => `"${c}"`).join(', ')}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Allowed: letters, numbers, spaces, hyphens, and underscores
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-description">Description (optional)</Label>
@@ -126,7 +192,10 @@ export default function ProjectSettings({ project, open, onClose }: ProjectSetti
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting || !nameValidation.isValid}
+            >
               {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>

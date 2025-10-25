@@ -104,8 +104,10 @@ export const projectApi = {
   },
 
   // Delete project
-  delete: async (id: number): Promise<void> => {
-    await apiClient.delete(`/api/projects/${id}`);
+  delete: async (id: number, hardDelete: boolean = true): Promise<void> => {
+    await apiClient.delete(`/api/projects/${id}`, {
+      params: { hard_delete: hardDelete }
+    });
   },
 
   // Export project

@@ -41,29 +41,36 @@ class FileStorageService:
         """Ensure base storage directory exists."""
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get_project_directory(self, project_id: int) -> Path:
+    def _get_project_directory(self, project_id: int = None, folder_name: str = None) -> Path:
         """
         Get storage directory path for a specific project.
 
         Args:
-            project_id: ID of the project
+            project_id: ID of the project (used if folder_name not provided)
+            folder_name: Custom folder name for the project (preferred)
 
         Returns:
             Path to project's storage directory
         """
-        return self.base_dir / f"project_{project_id}"
+        if folder_name:
+            return self.base_dir / folder_name
+        elif project_id:
+            return self.base_dir / f"project_{project_id}"
+        else:
+            raise ValueError("Either project_id or folder_name must be provided")
 
-    def _ensure_project_directory(self, project_id: int) -> Path:
+    def _ensure_project_directory(self, project_id: int = None, folder_name: str = None) -> Path:
         """
         Ensure project storage directory exists.
 
         Args:
-            project_id: ID of the project
+            project_id: ID of the project (used if folder_name not provided)
+            folder_name: Custom folder name for the project (preferred)
 
         Returns:
             Path to project's storage directory
         """
-        project_dir = self._get_project_directory(project_id)
+        project_dir = self._get_project_directory(project_id=project_id, folder_name=folder_name)
         project_dir.mkdir(parents=True, exist_ok=True)
         return project_dir
 
@@ -97,24 +104,25 @@ class FileStorageService:
 
         return unique_filename
 
-    def _get_relative_path(self, project_id: int, filename: str) -> str:
+    def _get_relative_path(self, folder_name: str, filename: str) -> str:
         """
         Get relative path for storage in database.
 
         Args:
-            project_id: ID of the project
+            folder_name: Name of the project folder
             filename: Name of the file
 
         Returns:
             Relative path string
         """
-        return f"project_{project_id}/{filename}"
+        return f"{folder_name}/{filename}"
 
     def save_file(
         self,
         file_content: BinaryIO,
         original_filename: str,
-        project_id: int
+        project_id: int,
+        folder_name: str = None
     ) -> tuple[str, str]:
         """
         Save uploaded file to storage.
@@ -123,16 +131,20 @@ class FileStorageService:
             file_content: File content as binary stream
             original_filename: Original name of the file
             project_id: ID of the project
+            folder_name: Custom folder name for the project (optional)
 
         Returns:
-            Tuple of (file_path, unique_filename)
+            Tuple of (relative_path, unique_filename)
 
         Raises:
             FileStorageError: If file cannot be saved
         """
         try:
             # Ensure project directory exists
-            project_dir = self._ensure_project_directory(project_id)
+            project_dir = self._ensure_project_directory(
+                project_id=project_id,
+                folder_name=folder_name
+            )
 
             # Generate unique filename
             unique_filename = self._generate_unique_filename(
@@ -149,7 +161,9 @@ class FileStorageService:
                 shutil.copyfileobj(file_content, f)
 
             # Return relative path for database storage
-            relative_path = self._get_relative_path(project_id, unique_filename)
+            # Use folder_name if provided, otherwise use project_id format
+            actual_folder = folder_name if folder_name else f"project_{project_id}"
+            relative_path = self._get_relative_path(actual_folder, unique_filename)
 
             return relative_path, unique_filename
 
@@ -290,12 +304,13 @@ class FileStorageService:
         except Exception as e:
             raise FileStorageError(f"Failed to move file: {str(e)}") from e
 
-    def cleanup_project_files(self, project_id: int) -> int:
+    def cleanup_project_files(self, project_id: int = None, folder_name: str = None) -> int:
         """
         Delete all files for a project.
 
         Args:
-            project_id: ID of the project
+            project_id: ID of the project (used if folder_name not provided)
+            folder_name: Custom folder name for the project (preferred)
 
         Returns:
             Number of files deleted
@@ -304,7 +319,10 @@ class FileStorageService:
             FileStorageError: If cleanup fails
         """
         try:
-            project_dir = self._get_project_directory(project_id)
+            project_dir = self._get_project_directory(
+                project_id=project_id,
+                folder_name=folder_name
+            )
 
             if not project_dir.exists():
                 return 0
@@ -396,20 +414,27 @@ class FileStorageService:
             "total_size_mb": round(total_size / (1024 * 1024), 2)
         }
 
-    def list_project_files(self, project_id: int) -> list[dict]:
+    def list_project_files(self, project_id: int = None, folder_name: str = None) -> list[dict]:
         """
         List all files for a project.
 
         Args:
-            project_id: ID of the project
+            project_id: ID of the project (used if folder_name not provided)
+            folder_name: Custom folder name for the project (preferred)
 
         Returns:
             List of file information dictionaries
         """
-        project_dir = self._get_project_directory(project_id)
+        project_dir = self._get_project_directory(
+            project_id=project_id,
+            folder_name=folder_name
+        )
 
         if not project_dir.exists():
             return []
+
+        # Get actual folder name for relative path
+        actual_folder = folder_name if folder_name else f"project_{project_id}"
 
         files = []
         for file_path in project_dir.glob("*"):
@@ -418,7 +443,7 @@ class FileStorageService:
                 files.append({
                     "filename": file_path.name,
                     "relative_path": self._get_relative_path(
-                        project_id,
+                        actual_folder,
                         file_path.name
                     ),
                     "size_bytes": stat.st_size,

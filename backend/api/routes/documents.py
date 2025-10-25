@@ -330,10 +330,14 @@ async def upload_document(
         from io import BytesIO
         file_obj = BytesIO(content)
 
+        # Use the project's storage folder name
+        folder_name = project.generate_storage_folder_name()
+
         relative_path, unique_filename = file_storage.save_file(
             file_content=file_obj,
             original_filename=file.filename,
-            project_id=project_id
+            project_id=project_id,
+            folder_name=folder_name
         )
 
         # Full path for processing
@@ -547,23 +551,28 @@ async def delete_document(
             )
 
         # Delete embeddings from vector store
-        vector_store.delete_documents(
-            project_id=document.project_id,
-            where={'document_id': document_id}
-        )
+        try:
+            vector_store.delete_documents(
+                project_id=document.project_id,
+                where={'document_id': document_id}
+            )
+            logger.info(f"Deleted embeddings for document {document_id}")
+        except Exception as e:
+            logger.warning(f"Failed to delete embeddings for document {document_id}: {str(e)}")
 
-        # Delete file from storage
+        # Delete file from storage using file storage service
         if document.file_path:
-            file_path = Path(document.file_path)
-            if file_path.exists():
-                file_path.unlink()
-                logger.info(f"Deleted file: {file_path}")
+            try:
+                file_storage.delete_file(document.file_path)
+                logger.info(f"Deleted file: {document.file_path}")
+            except Exception as e:
+                logger.warning(f"Failed to delete file {document.file_path}: {str(e)}")
 
         # Delete document record
         await db.delete(document)
         await db.commit()
 
-        logger.info(f"Deleted document {document_id}")
+        logger.info(f"Successfully deleted document {document_id}")
 
     except HTTPException:
         raise
@@ -761,10 +770,14 @@ async def bulk_upload_documents(
             from io import BytesIO
             file_obj = BytesIO(content)
 
+            # Use the project's storage folder name
+            folder_name = project.generate_storage_folder_name()
+
             relative_path, unique_filename = file_storage.save_file(
                 file_content=file_obj,
                 original_filename=file.filename,
-                project_id=project_id
+                project_id=project_id,
+                folder_name=folder_name
             )
 
             # Full path for processing
@@ -879,14 +892,12 @@ async def bulk_delete_documents(
             except Exception as e:
                 logger.warning(f"Failed to delete embeddings for document {document_id}: {str(e)}")
 
-            # Delete file from storage
+            # Delete file from storage using file storage service
             if document.file_path:
-                file_path = Path(document.file_path)
-                if file_path.exists():
-                    try:
-                        file_path.unlink()
-                    except Exception as e:
-                        logger.warning(f"Failed to delete file {file_path}: {str(e)}")
+                try:
+                    file_storage.delete_file(document.file_path)
+                except Exception as e:
+                    logger.warning(f"Failed to delete file {document.file_path}: {str(e)}")
 
             # Delete document record
             await db.delete(document)
