@@ -14,6 +14,12 @@ from pydantic import BaseModel
 
 from core.vectorstore import vector_store
 from services.file_storage import file_storage_service
+from core.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from fastapi import Depends
+from models.project import Project
+from models.document import Document
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +48,24 @@ class MaintenanceStatusResponse(BaseModel):
     """Response model for overall maintenance status."""
     vectorstore_stats: Dict[str, Any]
     file_storage_stats: Dict[str, Any]
+
+
+class ProjectCountUpdate(BaseModel):
+    """Individual project count update result."""
+    project_id: int
+    project_name: str
+    old_count: int
+    new_count: int
+    updated: bool
+
+
+class RecalculateCountsResponse(BaseModel):
+    """Response model for recalculate counts operation."""
+    status: str
+    total_projects: int
+    updated_projects: int
+    projects: list[ProjectCountUpdate]
+    message: str
 
 
 # Endpoints
@@ -158,4 +182,87 @@ async def get_maintenance_status():
         return MaintenanceStatusResponse(
             vectorstore_stats={"error": str(e)},
             file_storage_stats={"error": str(e)}
+        )
+
+
+@router.post("/recalculate-counts", response_model=RecalculateCountsResponse)
+async def recalculate_project_counts(db: AsyncSession = Depends(get_db)):
+    """
+    Recalculate document counts for all projects.
+
+    This endpoint recalculates the cached document_count field for all projects
+    by counting the actual number of documents in the database. Useful for:
+    - Fixing incorrect counts after manual database operations
+    - Recovering from errors during document upload/delete
+    - Verifying data integrity
+
+    Returns:
+        Details of which projects were updated and their new counts
+    """
+    try:
+        # Get all projects
+        result = await db.execute(select(Project))
+        projects = result.scalars().all()
+
+        project_updates = []
+        updated_count = 0
+
+        for project in projects:
+            # Count actual documents for this project
+            doc_result = await db.execute(
+                select(Document).where(Document.project_id == project.id)
+            )
+            documents = doc_result.scalars().all()
+            actual_count = len(documents)
+
+            # Check if update needed
+            old_count = project.document_count
+            needs_update = old_count != actual_count
+
+            if needs_update:
+                project.document_count = actual_count
+                updated_count += 1
+                logger.info(
+                    f"Updated project {project.id} ({project.name}): "
+                    f"{old_count} -> {actual_count}"
+                )
+
+            # Add to results
+            project_updates.append(
+                ProjectCountUpdate(
+                    project_id=project.id,
+                    project_name=project.name,
+                    old_count=old_count,
+                    new_count=actual_count,
+                    updated=needs_update
+                )
+            )
+
+        # Commit all changes
+        await db.commit()
+
+        message = (
+            f"Successfully recalculated counts for {len(projects)} projects. "
+            f"Updated {updated_count} project(s)."
+        )
+
+        logger.info(message)
+
+        return RecalculateCountsResponse(
+            status="success",
+            total_projects=len(projects),
+            updated_projects=updated_count,
+            projects=project_updates,
+            message=message
+        )
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to recalculate project counts: {str(e)}")
+        return RecalculateCountsResponse(
+            status="error",
+            total_projects=0,
+            updated_projects=0,
+            projects=[],
+            message=f"Failed to recalculate counts: {str(e)}"
         )

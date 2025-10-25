@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   useDocumentUpdates,
   useProjectUpdates,
@@ -37,83 +37,96 @@ export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
-  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: Date.now().toString(),
-      timestamp: Date.now(),
-      read: false,
-    };
+  const addNotification = useCallback(
+    (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+      const newNotification: Notification = {
+        ...notification,
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        read: false,
+      };
 
-    setNotifications((prev) => [newNotification, ...prev]);
+      setNotifications((prev) => [newNotification, ...prev]);
 
-    // Show toast for important notifications
-    if (notification.variant === 'error' || notification.variant === 'success') {
-      toast({
-        title: notification.title,
-        description: notification.message,
-        variant: notification.variant === 'error' ? 'destructive' : 'default',
-      });
-    }
-  };
-
-  // Listen to document updates
-  useDocumentUpdates((data: DocumentStatusEvent) => {
-    if (data.status === 'completed') {
-      addNotification({
-        type: 'document',
-        title: 'Document Processed',
-        message: `Document #${data.document_id} has been processed successfully`,
-        icon: <FileCheck className="h-4 w-4" />,
-        variant: 'success',
-      });
-    } else if (data.status === 'failed') {
-      addNotification({
-        type: 'document',
-        title: 'Processing Failed',
-        message: `Document #${data.document_id} failed to process`,
-        icon: <FileX className="h-4 w-4" />,
-        variant: 'error',
-      });
-    }
-  });
-
-  // Listen to project updates
-  useProjectUpdates((data: ProjectUpdateEvent) => {
-    const notificationMap: Record<
-      string,
-      {
-        title: string;
-        message: (data: any) => string;
-        icon: React.ReactNode;
-        variant: 'default' | 'success' | 'error' | 'info';
+      // Show toast for important notifications
+      if (notification.variant === 'error' || notification.variant === 'success') {
+        toast({
+          title: notification.title,
+          description: notification.message,
+          variant: notification.variant === 'error' ? 'destructive' : 'default',
+        });
       }
-    > = {
-      document_added: {
-        title: 'Document Added',
-        message: (d) => `${d.filename} has been added to the project`,
-        icon: <FilePlus className="h-4 w-4" />,
-        variant: 'info',
-      },
-      document_deleted: {
-        title: 'Document Removed',
-        message: (d) => `Document #${d.document_id} has been removed`,
-        icon: <Trash2 className="h-4 w-4" />,
-        variant: 'info',
-      },
-    };
+    },
+    [toast]
+  );
 
-    const config = notificationMap[data.type];
-    if (config) {
-      addNotification({
-        type: 'project',
-        title: config.title,
-        message: config.message(data.data),
-        icon: config.icon,
-        variant: config.variant,
-      });
-    }
-  });
+  // Listen to document updates - memoized callback to prevent infinite loops
+  const handleDocumentUpdate = useCallback(
+    (data: DocumentStatusEvent) => {
+      if (data.status === 'completed') {
+        addNotification({
+          type: 'document',
+          title: 'Document Processed',
+          message: `Document #${data.document_id} has been processed successfully`,
+          icon: <FileCheck className="h-4 w-4" />,
+          variant: 'success',
+        });
+      } else if (data.status === 'failed') {
+        addNotification({
+          type: 'document',
+          title: 'Processing Failed',
+          message: `Document #${data.document_id} failed to process`,
+          icon: <FileX className="h-4 w-4" />,
+          variant: 'error',
+        });
+      }
+    },
+    [addNotification]
+  );
+
+  useDocumentUpdates(handleDocumentUpdate);
+
+  // Listen to project updates - memoized callback to prevent infinite loops
+  const handleProjectUpdate = useCallback(
+    (data: ProjectUpdateEvent) => {
+      const notificationMap: Record<
+        string,
+        {
+          title: string;
+          message: (data: any) => string;
+          icon: React.ReactNode;
+          variant: 'default' | 'success' | 'error' | 'info';
+        }
+      > = {
+        document_added: {
+          title: 'Document Added',
+          message: (d) => `${d.filename} has been added to the project`,
+          icon: <FilePlus className="h-4 w-4" />,
+          variant: 'info',
+        },
+        document_deleted: {
+          title: 'Document Removed',
+          message: (d) => `Document #${d.document_id} has been removed`,
+          icon: <Trash2 className="h-4 w-4" />,
+          variant: 'info',
+        },
+      };
+
+      const config = notificationMap[data.type];
+      if (config) {
+        addNotification({
+          type: 'project',
+          title: config.title,
+          message: config.message(data.data),
+          icon: config.icon,
+          variant: config.variant,
+        });
+      }
+    },
+    [addNotification]
+  );
+
+  useProjectUpdates(handleProjectUpdate);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

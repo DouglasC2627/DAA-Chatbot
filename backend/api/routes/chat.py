@@ -126,6 +126,19 @@ async def create_chat(
             title=request.title
         )
 
+        # Update project chat count
+        from crud.project import project as project_crud
+        await project_crud.update_chat_count(db, request.project_id)
+        await db.commit()
+
+        # Notify clients about chat creation
+        from api.websocket.chat_ws import notify_project_update
+        await notify_project_update(request.project_id, 'chat_created', {
+            'project_id': request.project_id,
+            'chat_id': chat.id,
+            'title': chat.title
+        })
+
         return ChatResponse(
             id=chat.id,
             project_id=chat.project_id,
@@ -258,6 +271,16 @@ async def delete_chat(
     Raises:
         HTTPException: If chat not found
     """
+    # Get chat first to save project_id
+    chat = await chat_service.get_chat(db, chat_id, include_messages=False)
+    if not chat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Chat {chat_id} not found"
+        )
+
+    project_id = chat.project_id
+
     success = await chat_service.delete_chat(db, chat_id)
 
     if not success:
@@ -265,6 +288,18 @@ async def delete_chat(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Chat {chat_id} not found"
         )
+
+    # Update project chat count
+    from crud.project import project as project_crud
+    await project_crud.update_chat_count(db, project_id)
+    await db.commit()
+
+    # Notify clients about chat deletion
+    from api.websocket.chat_ws import notify_project_update
+    await notify_project_update(project_id, 'chat_deleted', {
+        'project_id': project_id,
+        'chat_id': chat_id
+    })
 
 
 @router.get("/projects/{project_id}/chats", response_model=List[ChatResponse])

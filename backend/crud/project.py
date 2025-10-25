@@ -93,6 +93,29 @@ class CRUDProject(CRUDBase[Project]):
         await db.flush()
         return True
 
+    async def update_chat_count(
+        self,
+        db: AsyncSession,
+        project_id: int
+    ) -> bool:
+        """
+        Update cached chat count for a project.
+
+        Args:
+            db: Database session
+            project_id: Project ID
+
+        Returns:
+            True if successful
+        """
+        project = await self.get(db, project_id)
+        if not project:
+            return False
+
+        project.chat_count = len(project.chats)
+        await db.flush()
+        return True
+
     async def soft_delete(self, db: AsyncSession, id: int) -> bool:
         """
         Soft delete a project.

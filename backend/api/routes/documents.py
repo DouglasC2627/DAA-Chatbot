@@ -364,6 +364,19 @@ async def upload_document(
         await db.commit()
         await db.refresh(document)
 
+        # Update project document count
+        from crud.project import project as project_crud
+        await project_crud.update_document_count(db, project_id)
+        await db.commit()
+
+        # Notify clients about document addition
+        from api.websocket.chat_ws import notify_project_update
+        await notify_project_update(project_id, 'document_added', {
+            'project_id': project_id,
+            'document_id': document.id,
+            'filename': document.filename
+        })
+
         # Schedule background processing
         background_tasks.add_task(
             process_document_background,
@@ -550,6 +563,9 @@ async def delete_document(
                 detail=f"Document {document_id} not found"
             )
 
+        # Save project_id before deleting document
+        project_id = document.project_id
+
         # Delete embeddings from vector store
         try:
             vector_store.delete_documents(
@@ -571,6 +587,18 @@ async def delete_document(
         # Delete document record
         await db.delete(document)
         await db.commit()
+
+        # Update project document count
+        from crud.project import project as project_crud
+        await project_crud.update_document_count(db, project_id)
+        await db.commit()
+
+        # Notify clients about document deletion
+        from api.websocket.chat_ws import notify_project_update
+        await notify_project_update(project_id, 'document_deleted', {
+            'project_id': project_id,
+            'document_id': document_id
+        })
 
         logger.info(f"Successfully deleted document {document_id}")
 
@@ -838,6 +866,21 @@ async def bulk_upload_documents(
     # Commit all successful uploads
     await db.commit()
 
+    # Update project document count if any documents were uploaded
+    if len(uploaded_docs) > 0:
+        from crud.project import project as project_crud
+        await project_crud.update_document_count(db, project_id)
+        await db.commit()
+
+        # Notify clients about document additions
+        from api.websocket.chat_ws import notify_project_update
+        for doc in uploaded_docs:
+            await notify_project_update(project_id, 'document_added', {
+                'project_id': project_id,
+                'document_id': doc.id,
+                'filename': doc.filename
+            })
+
     return BulkUploadResponse(
         uploaded=uploaded_docs,
         failed=failed_docs,
@@ -867,6 +910,7 @@ async def bulk_delete_documents(
     """
     deleted_ids = []
     failed_deletions = []
+    affected_projects = set()  # Track projects that need count update
 
     for document_id in delete_request.document_ids:
         try:
@@ -882,6 +926,9 @@ async def bulk_delete_documents(
                     'error': 'Document not found'
                 })
                 continue
+
+            # Track project for count update
+            affected_projects.add(document.project_id)
 
             # Delete embeddings from vector store
             try:
@@ -914,6 +961,20 @@ async def bulk_delete_documents(
 
     # Commit all successful deletions
     await db.commit()
+
+    # Update document count for all affected projects
+    if affected_projects:
+        from crud.project import project as project_crud
+        from api.websocket.chat_ws import notify_project_update
+        for project_id in affected_projects:
+            await project_crud.update_document_count(db, project_id)
+            # Notify clients about document deletions
+            for doc_id in deleted_ids:
+                await notify_project_update(project_id, 'document_deleted', {
+                    'project_id': project_id,
+                    'document_id': doc_id
+                })
+        await db.commit()
 
     return BulkDeleteResponse(
         deleted=deleted_ids,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDocumentUpdates, DocumentStatusEvent } from '@/lib/websocket';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
@@ -27,36 +27,41 @@ export function DocumentProcessingStatus({
 }: DocumentProcessingStatusProps) {
   const [processingDocs, setProcessingDocs] = useState<Map<number, ProcessingDocument>>(new Map());
 
-  // Listen to document status updates
-  useDocumentUpdates((data: DocumentStatusEvent) => {
-    const doc: ProcessingDocument = {
-      id: data.document_id,
-      status: data.status,
-      progress: data.progress || 0,
-      timestamp: Date.now(),
-    };
+  // Listen to document status updates - memoized callback to prevent infinite loops
+  const handleDocumentUpdate = useCallback(
+    (data: DocumentStatusEvent) => {
+      const doc: ProcessingDocument = {
+        id: data.document_id,
+        status: data.status,
+        progress: data.progress || 0,
+        timestamp: Date.now(),
+      };
 
-    setProcessingDocs((prev) => {
-      const updated = new Map(prev);
-      updated.set(data.document_id, doc);
-      return updated;
-    });
+      setProcessingDocs((prev) => {
+        const updated = new Map(prev);
+        updated.set(data.document_id, doc);
+        return updated;
+      });
 
-    // Trigger callbacks
-    if (data.status === 'completed' && onComplete) {
-      onComplete(data.document_id);
-      // Auto-remove after 3 seconds
-      setTimeout(() => {
-        setProcessingDocs((prev) => {
-          const updated = new Map(prev);
-          updated.delete(data.document_id);
-          return updated;
-        });
-      }, 3000);
-    } else if (data.status === 'failed' && onError) {
-      onError(data.document_id, 'Processing failed');
-    }
-  });
+      // Trigger callbacks
+      if (data.status === 'completed' && onComplete) {
+        onComplete(data.document_id);
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+          setProcessingDocs((prev) => {
+            const updated = new Map(prev);
+            updated.delete(data.document_id);
+            return updated;
+          });
+        }, 3000);
+      } else if (data.status === 'failed' && onError) {
+        onError(data.document_id, 'Processing failed');
+      }
+    },
+    [onComplete, onError]
+  );
+
+  useDocumentUpdates(handleDocumentUpdate);
 
   // Filter to specific document if provided
   const docs = documentId
@@ -155,11 +160,17 @@ export function DocumentStatusBadge({
 }) {
   const [status, setStatus] = useState<DocumentStatusEvent | null>(null);
 
-  useDocumentUpdates((data) => {
-    if (data.document_id === documentId) {
-      setStatus(data);
-    }
-  });
+  // Memoized callback to prevent infinite loops
+  const handleDocumentUpdate = useCallback(
+    (data: DocumentStatusEvent) => {
+      if (data.document_id === documentId) {
+        setStatus(data);
+      }
+    },
+    [documentId]
+  );
+
+  useDocumentUpdates(handleDocumentUpdate);
 
   if (!status || status.status === 'completed') {
     return null;

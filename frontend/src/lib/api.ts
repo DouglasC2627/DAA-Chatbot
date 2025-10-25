@@ -106,7 +106,7 @@ export const projectApi = {
   // Delete project
   delete: async (id: number, hardDelete: boolean = true): Promise<void> => {
     await apiClient.delete(`/api/projects/${id}`, {
-      params: { hard_delete: hardDelete }
+      params: { hard_delete: hardDelete },
     });
   },
 
@@ -197,17 +197,17 @@ export const documentApi = {
 export const chatApi = {
   // List chats for a project
   list: async (projectId: number): Promise<Chat[]> => {
-    const response = await apiClient.get<Chat[]>(`/api/projects/${projectId}/chats`);
-    return response.data || [];
+    const response = await apiClient.get<APIResponse<Chat[]>>(`/api/projects/${projectId}/chats`);
+    return response.data.data || [];
   },
 
   // Get chat by ID
   get: async (id: number): Promise<Chat> => {
-    const response = await apiClient.get<Chat>(`/api/chats/${id}`);
-    if (!response.data) {
+    const response = await apiClient.get<APIResponse<Chat>>(`/api/chats/${id}`);
+    if (!response.data.data) {
       throw new Error('Chat not found');
     }
-    return response.data;
+    return response.data.data;
   },
 
   // Create new chat
@@ -228,9 +228,9 @@ export const chatApi = {
   },
 
   // Get chat history (messages)
-  getMessages: async (chatId: number): Promise<Message[]> => {
-    const response = await apiClient.get<Message[]>(`/api/chats/${chatId}/messages`);
-    return response.data || [];
+  getHistory: async (chatId: number): Promise<Message[]> => {
+    const response = await apiClient.get<APIResponse<Message[]>>(`/api/chats/${chatId}`);
+    return response.data.data || [];
   },
 
   // Send message (non-streaming)

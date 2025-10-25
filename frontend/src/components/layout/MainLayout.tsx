@@ -5,6 +5,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 import Breadcrumb from './Breadcrumb';
+import { ProjectSync } from '@/components/projects/ProjectSync';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ interface MainLayoutProps {
 export default function MainLayout({ children, showBreadcrumb = true }: MainLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <ProjectSync />
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />

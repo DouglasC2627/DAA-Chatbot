@@ -49,6 +49,7 @@ class ProjectResponse(BaseModel):
     description: Optional[str]
     chroma_collection_name: str
     document_count: int
+    chat_count: int
     total_chunks: int
     settings: Optional[str]
     created_at: Optional[str]
@@ -130,6 +131,7 @@ async def create_project(
             description=project.description,
             chroma_collection_name=project.chroma_collection_name,
             document_count=project.document_count,
+            chat_count=project.chat_count,
             total_chunks=project.total_chunks,
             settings=project.settings,
             created_at=format_datetime(project.created_at),
@@ -184,6 +186,7 @@ async def list_projects(
                 description=project.description,
                 chroma_collection_name=project.chroma_collection_name,
                 document_count=project.document_count,
+                chat_count=project.chat_count,
                 total_chunks=project.total_chunks,
                 settings=project.settings,
                 created_at=project.created_at.isoformat() if project.created_at else None,
@@ -233,6 +236,7 @@ async def get_project(
             description=project.description,
             chroma_collection_name=project.chroma_collection_name,
             document_count=project.document_count,
+            chat_count=project.chat_count,
             total_chunks=project.total_chunks,
             settings=project.settings,
             created_at=format_datetime(project.created_at),
@@ -291,6 +295,7 @@ async def update_project(
             description=project.description,
             chroma_collection_name=project.chroma_collection_name,
             document_count=project.document_count,
+            chat_count=project.chat_count,
             total_chunks=project.total_chunks,
             settings=project.settings,
             created_at=format_datetime(project.created_at),
@@ -555,6 +560,7 @@ async def import_project(
             description=project.description,
             chroma_collection_name=project.chroma_collection_name,
             document_count=project.document_count,
+            chat_count=project.chat_count,
             total_chunks=project.total_chunks,
             settings=project.settings,
             created_at=format_datetime(project.created_at),
