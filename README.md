@@ -11,7 +11,6 @@ A fully-local, privacy-focused RAG (Retrieval-Augmented Generation) chatbot syst
 - **Multi-Format Support**: PDF, DOCX, TXT, MD, CSV, XLSX
 - **Project Isolation**: Organize documents and conversations by project
 - **Real-time Streaming**: WebSocket-based streaming responses
-- **Modern Tech Stack**: FastAPI + Next.js 14 + Ollama
 
 ## Tech Stack
 
