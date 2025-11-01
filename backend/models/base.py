@@ -27,7 +27,7 @@ def format_datetime(dt: datetime | None) -> str | None:
     Format datetime to ISO 8601 string with UTC timezone.
 
     Ensures timezone-aware formatting for consistent frontend parsing.
-    If datetime is naive (no timezone), treats it as local time and converts to UTC.
+    If datetime is naive (no timezone), assumes it's UTC.
 
     Args:
         dt: Datetime object to format (can be None)
@@ -38,25 +38,13 @@ def format_datetime(dt: datetime | None) -> str | None:
     if dt is None:
         return None
 
-    # If datetime is naive (no timezone info), treat as local time
-    # SQLite stores timezone-aware datetimes as naive local time
+    # If datetime is naive (no timezone info), assume it's UTC
+    # SQLite DateTime(timezone=True) stores UTC times as naive datetimes
     if dt.tzinfo is None:
-        # Assume naive datetime is in local timezone and convert to UTC
-        import time
-        from datetime import timedelta
+        dt = dt.replace(tzinfo=timezone.utc)
 
-        # Get local UTC offset in seconds
-        if time.daylight:
-            utc_offset = -time.altzone
-        else:
-            utc_offset = -time.timezone
-
-        # Convert local naive time to UTC
-        dt_utc = dt - timedelta(seconds=utc_offset)
-        dt_utc = dt_utc.replace(tzinfo=timezone.utc)
-    else:
-        # Convert to UTC if it's in a different timezone
-        dt_utc = dt.astimezone(timezone.utc)
+    # Convert to UTC if it's in a different timezone
+    dt_utc = dt.astimezone(timezone.utc)
 
     # Format with 'Z' suffix for UTC (more compatible than +00:00)
     return dt_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
