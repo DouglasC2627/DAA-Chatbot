@@ -4,8 +4,11 @@ CRUD operations for Project model.
 from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, and_
 
 from models import Project
+from models.document import Document
+from models.chat import Chat
 from crud.base import CRUDBase
 
 
@@ -89,7 +92,13 @@ class CRUDProject(CRUDBase[Project]):
         if not project:
             return False
 
-        project.document_count = len(project.documents)
+        # Count documents directly from database
+        result = await db.execute(
+            select(func.count(Document.id)).where(Document.project_id == project_id)
+        )
+        count = result.scalar_one()
+
+        project.document_count = count
         await db.flush()
         return True
 
@@ -112,7 +121,18 @@ class CRUDProject(CRUDBase[Project]):
         if not project:
             return False
 
-        project.chat_count = len(project.chats)
+        # Count only non-deleted chats directly from database
+        result = await db.execute(
+            select(func.count(Chat.id)).where(
+                and_(
+                    Chat.project_id == project_id,
+                    Chat.deleted_at.is_(None)
+                )
+            )
+        )
+        count = result.scalar_one()
+
+        project.chat_count = count
         await db.flush()
         return True
 

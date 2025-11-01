@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjectStore, selectProjects } from '@/stores/projectStore';
 import { useChatStore, selectCurrentChat, selectCurrentMessages } from '@/stores/chatStore';
-import { MessageRole } from '@/types';
+import { MessageRole, Message } from '@/types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,8 +47,19 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
 
   // Initialize or find chat for this project
   useEffect(() => {
+    // Use ref to prevent double execution in React StrictMode
+    let isInitializing = false;
+
     const initChat = async () => {
-      if (!project) return;
+      if (!project || isInitializing) return;
+
+      // Check if we already have a chat for this project in the store
+      if (currentChatId) {
+        console.log('Chat already initialized:', currentChatId);
+        return;
+      }
+
+      isInitializing = true;
 
       try {
         // Fetch existing chats from backend for this project
@@ -64,12 +75,15 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
 
           // Load existing messages for this chat
           try {
-            const existingMessages = await chatApi.getMessages(mostRecentChat.id);
+            const existingMessages = await chatApi.getHistory(mostRecentChat.id);
             // Add messages to store
-            existingMessages.forEach((msg) => {
+            existingMessages.forEach((msg: Message) => {
               addMessage(mostRecentChat.id, msg);
             });
-            console.log(`Loaded ${existingMessages.length} existing messages for chat:`, mostRecentChat.id);
+            console.log(
+              `Loaded ${existingMessages.length} existing messages for chat:`,
+              mostRecentChat.id
+            );
           } catch (msgError) {
             console.error('Failed to load messages:', msgError);
             // Continue even if messages fail to load
@@ -96,13 +110,15 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
           description: 'Failed to initialize chat session. Please refresh and try again.',
           variant: 'destructive',
         });
+      } finally {
+        isInitializing = false;
       }
     };
 
     initChat();
-    // Only depend on projectId and project to avoid re-running when chats change
+    // Only depend on projectId to run once when project changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, project]);
+  }, [projectId]);
 
   // Chat stream handlers
   const handleToken = useCallback((token: string) => {
@@ -139,29 +155,29 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
     assistantMessageIdRef.current = null;
   }, [currentChatId, streamingContent, streamingSources, updateMessage]);
 
-  const handleError = useCallback((error: string) => {
-    console.error('Chat stream error:', error);
-    toast({
-      title: 'Error',
-      description: error || 'Failed to generate response',
-      variant: 'destructive',
-    });
-    setIsGenerating(false);
-    setStreamingContent('');
-    setStreamingSources([]);
-    assistantMessageIdRef.current = null;
-  }, [toast]);
+  const handleError = useCallback(
+    (error: string) => {
+      console.error('Chat stream error:', error);
+      toast({
+        title: 'Error',
+        description: error || 'Failed to generate response',
+        variant: 'destructive',
+      });
+      setIsGenerating(false);
+      setStreamingContent('');
+      setStreamingSources([]);
+      assistantMessageIdRef.current = null;
+    },
+    [toast]
+  );
 
   // Use chat stream hook
-  const { sendMessage: sendWSMessage } = useChatStream(
-    currentChatId || 0,
-    {
-      onToken: handleToken,
-      onSources: handleSources,
-      onComplete: handleComplete,
-      onError: handleError,
-    }
-  );
+  const { sendMessage: sendWSMessage } = useChatStream(currentChatId || 0, {
+    onToken: handleToken,
+    onSources: handleSources,
+    onComplete: handleComplete,
+    onError: handleError,
+  });
 
   const handleSendMessage = async (content: string) => {
     if (!currentChatId || !project) {
@@ -218,7 +234,6 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
         include_history: true,
         temperature: 0.7,
       });
-
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
