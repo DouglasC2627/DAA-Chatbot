@@ -61,7 +61,10 @@ class VectorStore:
 
         collection = self.client.get_or_create_collection(
             name=collection_name,
-            metadata={"project_id": str(project_id)}
+            metadata={
+                "project_id": str(project_id),
+                "hnsw:space": "cosine"  # Use cosine similarity instead of L2 distance
+            }
         )
 
         return collection

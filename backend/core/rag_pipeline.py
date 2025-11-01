@@ -46,10 +46,10 @@ class RetrievedDocument:
     @property
     def score(self) -> float:
         """Convert distance to relevance score (0 to 1, higher is better)."""
-        # ChromaDB uses L2 distance, convert to similarity score
-        # Using inverse exponential: score = exp(-distance)
-        import math
-        return math.exp(-self.distance)
+        # ChromaDB uses cosine distance (1 - cosine_similarity)
+        # Convert to similarity score: score = 1 - distance
+        # Result ranges from 0 (orthogonal) to 1 (identical)
+        return max(0.0, min(1.0, 1.0 - self.distance))
 
     @property
     def document_id(self) -> Optional[int]:
