@@ -8,13 +8,16 @@ import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import SourceReferences from './SourceReferences';
+import ReactMarkdown from 'react-markdown';
 
 interface MessageProps {
   message: MessageType;
   showSources?: boolean;
+  useMarkdown?: boolean;
 }
 
-export default function Message({ message, showSources = true }: MessageProps) {
+export default function Message({ message, showSources = true, useMarkdown = true }: MessageProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
@@ -30,7 +33,7 @@ export default function Message({ message, showSources = true }: MessageProps) {
         description: 'Message copied to clipboard',
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to copy message',
@@ -38,6 +41,18 @@ export default function Message({ message, showSources = true }: MessageProps) {
       });
     }
   };
+
+  // Highlight source citations in text (e.g., [Source 1], [1], etc.)
+  const highlightCitations = (text: string): string => {
+    // Match patterns like [Source 1], [1], (Source 1), etc.
+    return text.replace(
+      /\[(Source\s+\d+|[Ss]ource\s+\d+|\d+)\]|\((Source\s+\d+|[Ss]ource\s+\d+)\)/g,
+      (match) => `**${match}**`
+    );
+  };
+
+  const processedContent =
+    isAssistant && useMarkdown ? highlightCitations(message.content) : message.content;
 
   return (
     <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -49,9 +64,15 @@ export default function Message({ message, showSources = true }: MessageProps) {
         </Avatar>
       )}
 
-      <div className={`flex flex-col gap-2 max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col gap-3 max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
         <Card className={`p-4 ${isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-          <div className="whitespace-pre-wrap break-words text-sm">{message.content}</div>
+          {isAssistant && useMarkdown ? (
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed">
+              <ReactMarkdown>{processedContent}</ReactMarkdown>
+            </div>
+          ) : (
+            <div className="whitespace-pre-wrap break-words text-sm">{message.content}</div>
+          )}
         </Card>
 
         <div className="flex items-center gap-2 px-2">
@@ -66,27 +87,10 @@ export default function Message({ message, showSources = true }: MessageProps) {
           )}
         </div>
 
-        {/* Source References */}
+        {/* Enhanced Source References */}
         {showSources && isAssistant && message.sources && message.sources.length > 0 && (
           <div className="w-full">
-            <div className="text-xs font-medium text-muted-foreground mb-2">
-              Sources ({message.sources.length})
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {message.sources.map((source, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  className="h-auto py-1 px-2 text-xs"
-                >
-                  <span className="truncate max-w-[200px]">
-                    {source.document_name}
-                    {source.page_number && ` (p.${source.page_number})`}
-                  </span>
-                </Button>
-              ))}
-            </div>
+            <SourceReferences sources={message.sources} />
           </div>
         )}
       </div>
