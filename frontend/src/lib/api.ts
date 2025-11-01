@@ -245,14 +245,57 @@ export const chatApi = {
     return response.data.data;
   },
 
-  // Export chat
-  export: async (id: number, format: 'md' | 'json' | 'pdf' = 'md'): Promise<Blob> => {
-    const response = await apiClient.post(
-      `/api/chats/${id}/export`,
-      { format },
-      { responseType: 'blob' }
-    );
+  // Update chat
+  update: async (id: number, title: string): Promise<Chat> => {
+    const response = await apiClient.put<Chat>(`/api/chats/${id}`, {
+      title,
+    });
+    if (!response.data) {
+      throw new Error('Failed to update chat');
+    }
     return response.data;
+  },
+
+  // Search chats
+  search: async (projectId: number, query: string): Promise<Chat[]> => {
+    const response = await apiClient.get<Chat[]>(`/api/projects/${projectId}/chats/search`, {
+      params: { q: query },
+    });
+    return response.data || [];
+  },
+
+  // Export chat as Markdown
+  exportMarkdown: async (id: number): Promise<void> => {
+    const response = await apiClient.get(`/api/chats/${id}/export/markdown`, {
+      responseType: 'blob',
+    });
+
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `chat_${id}.md`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  // Export chat as JSON
+  exportJSON: async (id: number): Promise<void> => {
+    const response = await apiClient.get(`/api/chats/${id}/export/json`, {
+      responseType: 'blob',
+    });
+
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `chat_${id}.json`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 };
 

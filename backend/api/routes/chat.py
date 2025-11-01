@@ -511,3 +511,144 @@ async def search_chats(
         )
         for chat in chats
     ]
+
+
+@router.get("/chats/{chat_id}/export/markdown")
+async def export_chat_markdown(
+    chat_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Export chat history as Markdown.
+
+    Args:
+        chat_id: Chat ID
+        db: Database session
+
+    Returns:
+        Markdown file download
+
+    Raises:
+        HTTPException: If chat not found
+    """
+    from fastapi.responses import Response
+
+    chat = await chat_service.get_chat(db, chat_id, include_messages=True)
+
+    if not chat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Chat {chat_id} not found"
+        )
+
+    # Generate markdown content
+    markdown_lines = [
+        f"# {chat.title}",
+        "",
+        f"**Created:** {format_datetime(chat.created_at)}",
+        f"**Updated:** {format_datetime(chat.updated_at)}",
+        f"**Messages:** {chat.message_count}",
+        "",
+        "---",
+        ""
+    ]
+
+    for msg in chat.messages:
+        role_emoji = "👤" if msg.role == MessageRole.USER else "🤖"
+        role_name = "User" if msg.role == MessageRole.USER else "Assistant"
+
+        markdown_lines.append(f"## {role_emoji} {role_name}")
+        markdown_lines.append(f"*{format_datetime(msg.created_at)}*")
+        markdown_lines.append("")
+        markdown_lines.append(msg.content)
+        markdown_lines.append("")
+
+        # Add sources if available
+        if msg.has_sources:
+            sources = msg.get_sources()
+            markdown_lines.append("### 📚 Sources")
+            for i, src in enumerate(sources, 1):
+                doc_name = src.get('metadata', {}).get('filename', 'Unknown')
+                score = src.get('score', 0)
+                markdown_lines.append(f"{i}. **{doc_name}** (Relevance: {score:.2%})")
+            markdown_lines.append("")
+
+        markdown_lines.append("---")
+        markdown_lines.append("")
+
+    markdown_content = "\n".join(markdown_lines)
+
+    # Return as downloadable file
+    filename = f"chat_{chat_id}_{chat.title.replace(' ', '_')}.md"
+
+    return Response(
+        content=markdown_content,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+
+@router.get("/chats/{chat_id}/export/json")
+async def export_chat_json(
+    chat_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Export chat history as JSON.
+
+    Args:
+        chat_id: Chat ID
+        db: Database session
+
+    Returns:
+        JSON file download
+
+    Raises:
+        HTTPException: If chat not found
+    """
+    from fastapi.responses import Response
+
+    chat = await chat_service.get_chat(db, chat_id, include_messages=True)
+
+    if not chat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Chat {chat_id} not found"
+        )
+
+    # Build JSON structure
+    export_data = {
+        "chat_id": chat.id,
+        "project_id": chat.project_id,
+        "title": chat.title,
+        "message_count": chat.message_count,
+        "created_at": format_datetime(chat.created_at),
+        "updated_at": format_datetime(chat.updated_at),
+        "messages": [
+            {
+                "id": msg.id,
+                "role": msg.role.value,
+                "content": msg.content,
+                "sources": msg.get_sources() if msg.has_sources else None,
+                "model_name": msg.model_name,
+                "created_at": format_datetime(msg.created_at)
+            }
+            for msg in chat.messages
+        ]
+    }
+
+    # Convert to JSON
+    json_content = json.dumps(export_data, indent=2, ensure_ascii=False)
+
+    # Return as downloadable file
+    filename = f"chat_{chat_id}_{chat.title.replace(' ', '_')}.json"
+
+    return Response(
+        content=json_content,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
