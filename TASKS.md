@@ -342,13 +342,13 @@ pip install python-socketio==5.14.2 python-multipart==0.0.20
 ```bash
 npm install react-markdown react-syntax-highlighter
 ```
-- [ ] Create `frontend/components/chat/SourceReferences.tsx`
-- [ ] Implement source linking in responses
-- [ ] Add source preview modal
-- [ ] Create citation formatting
-- [ ] Implement source highlighting
-- [ ] Add "jump to source" functionality
-- [ ] Test source attribution accuracy
+- [x] Create `frontend/components/chat/SourceReferences.tsx`
+- [x] Implement source linking in responses
+- [x] Add source preview modal
+- [x] Create citation formatting
+- [x] Implement source highlighting
+- [x] Add "jump to source" functionality
+- [x] Test source attribution accuracy
 
 ### Task 9.2: Chat History & Management
 - [ ] Implement chat history persistence
