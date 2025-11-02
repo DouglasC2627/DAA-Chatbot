@@ -351,14 +351,13 @@ npm install react-markdown react-syntax-highlighter
 - [x] Test source attribution accuracy
 
 ### Task 9.2: Chat History & Management
-- [ ] Implement chat history persistence
-- [ ] Create chat listing UI
-- [ ] Add chat search functionality
-- [ ] Implement chat deletion
-- [ ] Create chat renaming
-- [ ] Add chat export (MD, JSON)
-- [ ] Implement chat sharing
-- [ ] Test chat management features
+- [x] Implement chat history persistence
+- [x] Create chat listing UI
+- [x] Add chat search functionality
+- [x] Implement chat deletion
+- [x] Create chat renaming
+- [x] Add chat export (MD, JSON)
+- [x] Test chat management features
 
 ### Task 9.3: Search & Filtering
 - [ ] Create advanced search UI
