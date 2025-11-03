@@ -160,7 +160,7 @@ export default function ProjectSettings({ project, open, onClose }: ProjectSetti
                   <div>
                     <p className="font-medium">Invalid characters detected</p>
                     <p className="text-xs mt-1">
-                      Found: {nameValidation.invalidChars.map(c => `"${c}"`).join(', ')}
+                      Found: {nameValidation.invalidChars.map((c) => `"${c}"`).join(', ')}
                     </p>
                   </div>
                 </div>
@@ -192,10 +192,7 @@ export default function ProjectSettings({ project, open, onClose }: ProjectSetti
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || !nameValidation.isValid}
-            >
+            <Button type="submit" disabled={isSubmitting || !nameValidation.isValid}>
               {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>

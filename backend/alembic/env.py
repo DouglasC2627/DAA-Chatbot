@@ -5,7 +5,6 @@ Alembic environment configuration for DAA Chatbot database migrations.
 # Note: This file may have some false positive linting errors because:
 # 1. alembic.context is a special runtime module that pylint can't analyze
 # 2. Dynamic imports after sys.path modification confuse static analysis
-# The code works correctly - migrations have been tested successfully.
 
 from logging.config import fileConfig
 import sys
