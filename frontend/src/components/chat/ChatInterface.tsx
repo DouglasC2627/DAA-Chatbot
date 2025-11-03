@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useProjectStore, selectProjects } from '@/stores/projectStore';
-import { useChatStore, selectCurrentChat, selectCurrentMessages } from '@/stores/chatStore';
-import { MessageRole, Message } from '@/types';
+import { useShallow } from 'zustand/react/shallow';
+import { useProjectStore } from '@/stores/projectStore';
+import { useChatStore } from '@/stores/chatStore';
+import { MessageRole } from '@/types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,17 +28,16 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
   const [streamingSources, setStreamingSources] = useState<SourceDocument[]>([]);
   const assistantMessageIdRef = useRef<number | null>(null);
 
-  // Get project details - use stable selector
-  const projects = useProjectStore(selectProjects);
-  const project = useMemo(() => projects.find((p) => p.id === projectId), [projects, projectId]);
+  // Get project details - use useShallow to prevent infinite loops
+  const project = useProjectStore(
+    useShallow((state) => state.projects.find((p) => p.id === projectId))
+  );
 
-  // Chat store state - use stable selectors
-  const messages = useChatStore(selectCurrentMessages);
+  // Chat store state - use useShallow for array comparisons
   const currentChatId = useChatStore((state) => state.currentChatId);
-  const setCurrentChat = useChatStore((state) => state.setCurrentChat);
-  const addChat = useChatStore((state) => state.addChat);
-  const addMessage = useChatStore((state) => state.addMessage);
-  const updateMessage = useChatStore((state) => state.updateMessage);
+  const messages = useChatStore(
+    useShallow((state) => (state.currentChatId ? state.messages[state.currentChatId] || [] : []))
+  );
 
   // WebSocket connection
   const { isConnected } = useWebSocketConnection({ autoConnect: true });
@@ -45,80 +45,153 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
   // Join project room when connected
   useProjectRoom(isConnected ? projectId : null);
 
-  // Initialize or find chat for this project
+  // Use ref to track initialization status per project
+  const initializingRef = useRef<number | null>(null);
+  const initializedProjects = useRef<Set<number>>(new Set());
+  const loadedMessagesRef = useRef<Set<number>>(new Set());
+
+  // Step 1: Initialize chat session for the project (fetch or create chat)
   useEffect(() => {
-    // Use ref to prevent double execution in React StrictMode
-    let isInitializing = false;
+    // Don't initialize if project not found
+    if (!project) {
+      console.log(`[ChatInterface] Project ${projectId} not found in store, waiting...`);
+      return;
+    }
+
+    // Prevent re-initialization BEFORE starting async work
+    if (initializingRef.current === projectId || initializedProjects.current.has(projectId)) {
+      console.log(
+        `[ChatInterface] Project ${projectId} already initializing or initialized, skipping`
+      );
+      return;
+    }
+
+    // Mark as initializing immediately to prevent duplicate runs
+    initializingRef.current = projectId;
+    console.log(`[ChatInterface] Set initializingRef to ${projectId}`);
 
     const initChat = async () => {
-      if (!project || isInitializing) return;
-
-      // Check if we already have a chat for this project in the store
-      if (currentChatId) {
-        console.log('Chat already initialized:', currentChatId);
-        return;
-      }
-
-      isInitializing = true;
+      // Get fresh store state inside the effect
+      const store = useChatStore.getState();
+      const { syncWithProject, setCurrentChat, addChat, chats: storeChats } = store;
 
       try {
+        console.log(`[ChatInterface] Initializing chat for project ${projectId}`);
+
+        // First, sync store with current project (removes chats from other projects)
+        syncWithProject(projectId);
+        console.log(`[ChatInterface] Store synced with project ${projectId}`);
+
         // Fetch existing chats from backend for this project
+        console.log(`[ChatInterface] Fetching chats for project ${projectId}...`);
         const existingChats = await chatApi.list(projectId);
+        console.log(`[ChatInterface] Received chats:`, existingChats);
 
         if (existingChats && existingChats.length > 0) {
           // Use the most recent chat
-          const mostRecentChat = existingChats[0];
+          const chatToUse = existingChats[0];
+          console.log(`[ChatInterface] Will use existing chat:`, chatToUse);
 
-          // Update store with backend chat
-          addChat(mostRecentChat);
-          setCurrentChat(mostRecentChat.id);
-
-          // Load existing messages for this chat
-          try {
-            const existingMessages = await chatApi.getHistory(mostRecentChat.id);
-            // Add messages to store
-            existingMessages.forEach((msg: Message) => {
-              addMessage(mostRecentChat.id, msg);
-            });
-            console.log(
-              `Loaded ${existingMessages.length} existing messages for chat:`,
-              mostRecentChat.id
-            );
-          } catch (msgError) {
-            console.error('Failed to load messages:', msgError);
-            // Continue even if messages fail to load
+          // Only add if not already in store
+          const chatExistsInStore = storeChats.some((c) => c.id === chatToUse.id);
+          console.log(`[ChatInterface] Chat exists in store: ${chatExistsInStore}`);
+          if (!chatExistsInStore) {
+            addChat(chatToUse);
+            console.log(`[ChatInterface] Added chat ${chatToUse.id} to store`);
           }
 
-          console.log('Using existing chat:', mostRecentChat.id);
+          setCurrentChat(chatToUse.id);
+          console.log(`[ChatInterface] Using existing chat: ${chatToUse.id}, currentChatId set`);
         } else {
           // No existing chats, create a new one via API
+          console.log(`[ChatInterface] No existing chats, creating new one...`);
           const newChat = await chatApi.create(projectId, `Chat with ${project.name}`);
+          console.log(`[ChatInterface] Created chat:`, newChat);
+
           addChat(newChat);
+          console.log(`[ChatInterface] Added new chat ${newChat.id} to store`);
+
           setCurrentChat(newChat.id);
+          console.log(`[ChatInterface] Set currentChatId to ${newChat.id}`);
 
           toast({
             title: 'Chat Started',
             description: `Started new chat for ${project.name}`,
           });
 
-          console.log('Created new chat:', newChat.id);
+          console.log(`[ChatInterface] Created new chat: ${newChat.id}`);
         }
+
+        // Mark project as initialized
+        initializedProjects.current.add(projectId);
+        console.log(`[ChatInterface] Project ${projectId} initialized successfully`);
       } catch (error) {
-        console.error('Failed to initialize chat:', error);
+        console.error('[ChatInterface] Failed to initialize chat:', error);
+        console.error('[ChatInterface] Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          error: error,
+        });
+
         toast({
           title: 'Error',
           description: 'Failed to initialize chat session. Please refresh and try again.',
           variant: 'destructive',
         });
       } finally {
-        isInitializing = false;
+        initializingRef.current = null;
       }
     };
 
     initChat();
-    // Only depend on projectId to run once when project changes
+
+    return () => {
+      console.log(`[ChatInterface] Cleanup called for project ${projectId}`);
+      // No cleanup needed - initialization will complete and update Zustand store
+      // which persists across component mounts
+    };
+    // Only depend on projectId - toast is stable and shouldn't cause re-initialization
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  // Step 2: Load messages when current chat changes
+  useEffect(() => {
+    if (!currentChatId) {
+      return;
+    }
+
+    // Skip if already loaded
+    if (loadedMessagesRef.current.has(currentChatId)) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadMessages = async () => {
+      try {
+        console.log(`[ChatInterface] Loading messages for chat ${currentChatId}`);
+        const existingMessages = await chatApi.getHistory(currentChatId);
+
+        if (!isMounted) return;
+
+        const { setMessages } = useChatStore.getState();
+        setMessages(currentChatId, existingMessages);
+        loadedMessagesRef.current.add(currentChatId);
+
+        console.log(
+          `[ChatInterface] Loaded ${existingMessages.length} messages for chat ${currentChatId}`
+        );
+      } catch (error) {
+        console.error('[ChatInterface] Failed to load messages:', error);
+      }
+    };
+
+    loadMessages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentChatId]);
 
   // Chat stream handlers
   const handleToken = useCallback((token: string) => {
@@ -131,8 +204,10 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
 
   const handleComplete = useCallback(() => {
     // Finalize the assistant message with complete content
+    const { updateMessage: storeUpdateMessage } = useChatStore.getState();
+
     if (assistantMessageIdRef.current && currentChatId) {
-      updateMessage(currentChatId, assistantMessageIdRef.current, {
+      storeUpdateMessage(currentChatId, assistantMessageIdRef.current, {
         content: streamingContent,
         sources: streamingSources.map((src) => ({
           id: src.id,
@@ -153,7 +228,7 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
     setStreamingContent('');
     setStreamingSources([]);
     assistantMessageIdRef.current = null;
-  }, [currentChatId, streamingContent, streamingSources, updateMessage]);
+  }, [currentChatId, streamingContent, streamingSources]);
 
   const handleError = useCallback(
     (error: string) => {
@@ -199,6 +274,9 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
     }
 
     try {
+      // Get store actions
+      const { addMessage: storeAddMessage } = useChatStore.getState();
+
       // Add user message
       const userMessage = {
         id: Date.now(),
@@ -208,7 +286,7 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
         created_at: new Date().toISOString(),
       };
 
-      addMessage(currentChatId, userMessage);
+      storeAddMessage(currentChatId, userMessage);
 
       // Create placeholder assistant message for streaming
       const assistantMessageId = Date.now() + 1;
@@ -222,7 +300,7 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
         created_at: new Date().toISOString(),
       };
 
-      addMessage(currentChatId, assistantMessage);
+      storeAddMessage(currentChatId, assistantMessage);
 
       // Set generating state
       setIsGenerating(true);
@@ -248,11 +326,12 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
   // Update streaming message in real-time
   useEffect(() => {
     if (isGenerating && assistantMessageIdRef.current && currentChatId && streamingContent) {
-      updateMessage(currentChatId, assistantMessageIdRef.current, {
+      const { updateMessage: storeUpdateMessage } = useChatStore.getState();
+      storeUpdateMessage(currentChatId, assistantMessageIdRef.current, {
         content: streamingContent,
       });
     }
-  }, [streamingContent, isGenerating, currentChatId, updateMessage]);
+  }, [streamingContent, isGenerating, currentChatId]);
 
   if (!project) {
     return (
@@ -295,9 +374,15 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
             </div>
           </div>
 
-          <Button variant="ghost" size="icon" title="Chat Settings" className="h-8 w-8">
-            <Settings className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Debug info */}
+            <div className="text-xs text-muted-foreground">
+              Chat ID: {currentChatId || 'none'} | WS: {isConnected ? '✓' : '✗'}
+            </div>
+            <Button variant="ghost" size="icon" title="Chat Settings" className="h-8 w-8">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
