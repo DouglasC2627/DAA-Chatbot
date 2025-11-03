@@ -50,6 +50,23 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
   const initializedProjects = useRef<Set<number>>(new Set());
   const loadedMessagesRef = useRef<Set<number>>(new Set());
 
+  // Helper function to transform sources from backend format to frontend format
+  const transformSources = (sources: any[] | null | undefined) => {
+    if (!sources || !Array.isArray(sources)) return undefined;
+
+    return sources.map((src: any) => ({
+      id: src.id,
+      content: src.content || '',
+      metadata: src.metadata || {},
+      score: src.score || 0,
+      document_id: src.metadata?.document_id || src.document_id || 0,
+      document_name: src.metadata?.filename || src.document_name || 'Unknown Document',
+      chunk_index: src.metadata?.chunk_index ?? src.chunk_index ?? 0,
+      page_number: src.metadata?.page || src.page_number,
+      similarity_score: src.score ?? src.similarity_score ?? 0,
+    }));
+  };
+
   // Step 1: Initialize chat session for the project (fetch or create chat)
   useEffect(() => {
     // Don't initialize if project not found
@@ -174,8 +191,14 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
 
         if (!isMounted) return;
 
+        // Transform sources in messages to frontend format
+        const transformedMessages = existingMessages.map((msg) => ({
+          ...msg,
+          sources: msg.sources ? transformSources(msg.sources) : undefined,
+        }));
+
         const { setMessages } = useChatStore.getState();
-        setMessages(currentChatId, existingMessages);
+        setMessages(currentChatId, transformedMessages);
         loadedMessagesRef.current.add(currentChatId);
 
         console.log(
