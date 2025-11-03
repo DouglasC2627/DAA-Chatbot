@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronRight, Home } from 'lucide-react';
-import { useProjectStore, selectCurrentProject } from '@/stores/projectStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useProjectStore } from '@/stores/projectStore';
 import { Fragment } from 'react';
 
 interface BreadcrumbItem {
@@ -14,7 +15,9 @@ interface BreadcrumbItem {
 
 export default function Breadcrumb() {
   const pathname = usePathname();
-  const currentProject = useProjectStore(selectCurrentProject);
+  const currentProject = useProjectStore(
+    useShallow((state) => state.projects.find((project) => project.id === state.currentProjectId))
+  );
 
   // Generate breadcrumb items based on current path
   const getBreadcrumbs = (): BreadcrumbItem[] => {

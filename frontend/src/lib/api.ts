@@ -197,17 +197,17 @@ export const documentApi = {
 export const chatApi = {
   // List chats for a project
   list: async (projectId: number): Promise<Chat[]> => {
-    const response = await apiClient.get<APIResponse<Chat[]>>(`/api/projects/${projectId}/chats`);
-    return response.data.data || [];
+    const response = await apiClient.get<Chat[]>(`/api/projects/${projectId}/chats`);
+    return response.data || [];
   },
 
   // Get chat by ID
   get: async (id: number): Promise<Chat> => {
-    const response = await apiClient.get<APIResponse<Chat>>(`/api/chats/${id}`);
-    if (!response.data.data) {
+    const response = await apiClient.get<Chat>(`/api/chats/${id}`);
+    if (!response.data) {
       throw new Error('Chat not found');
     }
-    return response.data.data;
+    return response.data;
   },
 
   // Create new chat
@@ -229,20 +229,20 @@ export const chatApi = {
 
   // Get chat history (messages)
   getHistory: async (chatId: number): Promise<Message[]> => {
-    const response = await apiClient.get<APIResponse<Message[]>>(`/api/chats/${chatId}`);
-    return response.data.data || [];
+    const response = await apiClient.get<Message[]>(`/api/chats/${chatId}/messages`);
+    return response.data || [];
   },
 
   // Send message (non-streaming)
   sendMessage: async (chatId: number, data: SendMessageRequest): Promise<SendMessageResponse> => {
-    const response = await apiClient.post<APIResponse<SendMessageResponse>>(
+    const response = await apiClient.post<SendMessageResponse>(
       `/api/chats/${chatId}/messages`,
       data
     );
-    if (!response.data.data) {
+    if (!response.data) {
       throw new Error('Failed to send message');
     }
-    return response.data.data;
+    return response.data;
   },
 
   // Update chat

@@ -1,6 +1,6 @@
 // Chat Store - Zustand state management for chat functionality
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import type { Chat, Message, SourceReference, MessageRole } from '@/types';
 
 // ============================================================================
@@ -37,6 +37,8 @@ interface ChatState {
 
   // Actions - Utility
   reset: () => void;
+  clearAllData: () => void;
+  syncWithProject: (projectId: number) => void;
 }
 
 // ============================================================================
@@ -58,230 +60,245 @@ const initialState = {
 
 export const useChatStore = create<ChatState>()(
   devtools(
-    persist(
-      (set, get) => ({
-        ...initialState,
+    (set, get) => ({
+      ...initialState,
 
-        // ============================================================================
-        // Chat Management Actions
-        // ============================================================================
+      // ============================================================================
+      // Chat Management Actions
+      // ============================================================================
 
-        setCurrentChat: (chatId) => {
-          set({ currentChatId: chatId }, false, 'setCurrentChat');
-        },
+      setCurrentChat: (chatId) => {
+        set({ currentChatId: chatId }, false, 'setCurrentChat');
+      },
 
-        addChat: (chat) => {
-          set(
-            (state) => ({
-              chats: [chat, ...state.chats],
-              messages: { ...state.messages, [chat.id]: [] },
-            }),
-            false,
-            'addChat'
-          );
-        },
+      addChat: (chat) => {
+        set(
+          (state) => ({
+            chats: [chat, ...state.chats],
+            messages: { ...state.messages, [chat.id]: [] },
+          }),
+          false,
+          'addChat'
+        );
+      },
 
-        updateChat: (chatId, updates) => {
-          set(
-            (state) => ({
-              chats: state.chats.map((chat) =>
-                chat.id === chatId ? { ...chat, ...updates } : chat
-              ),
-            }),
-            false,
-            'updateChat'
-          );
-        },
+      updateChat: (chatId, updates) => {
+        set(
+          (state) => ({
+            chats: state.chats.map((chat) => (chat.id === chatId ? { ...chat, ...updates } : chat)),
+          }),
+          false,
+          'updateChat'
+        );
+      },
 
-        deleteChat: (chatId) => {
-          set(
-            (state) => {
-              const newMessages = { ...state.messages };
-              delete newMessages[chatId];
+      deleteChat: (chatId) => {
+        set(
+          (state) => {
+            const newMessages = { ...state.messages };
+            delete newMessages[chatId];
 
-              return {
-                chats: state.chats.filter((chat) => chat.id !== chatId),
-                messages: newMessages,
-                currentChatId: state.currentChatId === chatId ? null : state.currentChatId,
-              };
-            },
-            false,
-            'deleteChat'
-          );
-        },
+            return {
+              chats: state.chats.filter((chat) => chat.id !== chatId),
+              messages: newMessages,
+              currentChatId: state.currentChatId === chatId ? null : state.currentChatId,
+            };
+          },
+          false,
+          'deleteChat'
+        );
+      },
 
-        setChats: (chats) => {
-          set({ chats }, false, 'setChats');
-        },
+      setChats: (chats) => {
+        set({ chats }, false, 'setChats');
+      },
 
-        // ============================================================================
-        // Message Management Actions
-        // ============================================================================
+      // ============================================================================
+      // Message Management Actions
+      // ============================================================================
 
-        addMessage: (chatId, message) => {
-          set(
-            (state) => {
-              const chatMessages = state.messages[chatId] || [];
-              return {
-                messages: {
-                  ...state.messages,
-                  [chatId]: [...chatMessages, message],
-                },
-              };
-            },
-            false,
-            'addMessage'
-          );
-
-          // Update chat's message count and updated_at
-          const chat = get().chats.find((c) => c.id === chatId);
-          if (chat) {
-            get().updateChat(chatId, {
-              message_count: (chat.message_count || 0) + 1,
-              updated_at: new Date().toISOString(),
-            });
-          }
-        },
-
-        updateMessage: (chatId, messageId, updates) => {
-          set(
-            (state) => {
-              const chatMessages = state.messages[chatId] || [];
-              return {
-                messages: {
-                  ...state.messages,
-                  [chatId]: chatMessages.map((msg) =>
-                    msg.id === messageId ? { ...msg, ...updates } : msg
-                  ),
-                },
-              };
-            },
-            false,
-            'updateMessage'
-          );
-        },
-
-        setMessages: (chatId, messages) => {
-          set(
-            (state) => ({
+      addMessage: (chatId, message) => {
+        set(
+          (state) => {
+            const chatMessages = state.messages[chatId] || [];
+            return {
               messages: {
                 ...state.messages,
-                [chatId]: messages,
+                [chatId]: [...chatMessages, message],
               },
-            }),
-            false,
-            'setMessages'
-          );
-        },
+            };
+          },
+          false,
+          'addMessage'
+        );
 
-        clearMessages: (chatId) => {
-          set(
-            (state) => ({
+        // Update chat's message count and updated_at
+        const chat = get().chats.find((c) => c.id === chatId);
+        if (chat) {
+          get().updateChat(chatId, {
+            message_count: (chat.message_count || 0) + 1,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      },
+
+      updateMessage: (chatId, messageId, updates) => {
+        set(
+          (state) => {
+            const chatMessages = state.messages[chatId] || [];
+            return {
               messages: {
                 ...state.messages,
-                [chatId]: [],
+                [chatId]: chatMessages.map((msg) =>
+                  msg.id === messageId ? { ...msg, ...updates } : msg
+                ),
               },
-            }),
-            false,
-            'clearMessages'
-          );
-        },
+            };
+          },
+          false,
+          'updateMessage'
+        );
+      },
 
-        // ============================================================================
-        // Streaming Actions
-        // ============================================================================
-
-        startStreaming: (messageId) => {
-          set(
-            {
-              activeStreaming: true,
-              streamingMessageId: messageId,
-              streamingContent: '',
+      setMessages: (chatId, messages) => {
+        set(
+          (state) => ({
+            messages: {
+              ...state.messages,
+              [chatId]: messages,
             },
-            false,
-            'startStreaming'
-          );
-        },
+          }),
+          false,
+          'setMessages'
+        );
+      },
 
-        appendStreamChunk: (chunk) => {
-          set(
-            (state) => ({
-              streamingContent: state.streamingContent + chunk,
-            }),
-            false,
-            'appendStreamChunk'
-          );
-        },
+      clearMessages: (chatId) => {
+        set(
+          (state) => ({
+            messages: {
+              ...state.messages,
+              [chatId]: [],
+            },
+          }),
+          false,
+          'clearMessages'
+        );
+      },
 
-        endStreaming: () => {
-          const { currentChatId, streamingMessageId, streamingContent } = get();
+      // ============================================================================
+      // Streaming Actions
+      // ============================================================================
 
-          // Save the streamed content to the message
-          if (currentChatId && streamingMessageId && streamingContent) {
-            get().updateMessage(currentChatId, streamingMessageId, {
-              content: streamingContent,
+      startStreaming: (messageId) => {
+        set(
+          {
+            activeStreaming: true,
+            streamingMessageId: messageId,
+            streamingContent: '',
+          },
+          false,
+          'startStreaming'
+        );
+      },
+
+      appendStreamChunk: (chunk) => {
+        set(
+          (state) => ({
+            streamingContent: state.streamingContent + chunk,
+          }),
+          false,
+          'appendStreamChunk'
+        );
+      },
+
+      endStreaming: () => {
+        const { currentChatId, streamingMessageId, streamingContent } = get();
+
+        // Save the streamed content to the message
+        if (currentChatId && streamingMessageId && streamingContent) {
+          get().updateMessage(currentChatId, streamingMessageId, {
+            content: streamingContent,
+          });
+        }
+
+        set(
+          {
+            activeStreaming: false,
+            streamingMessageId: null,
+            streamingContent: '',
+          },
+          false,
+          'endStreaming'
+        );
+      },
+
+      resetStreaming: () => {
+        set(
+          {
+            activeStreaming: false,
+            streamingMessageId: null,
+            streamingContent: '',
+          },
+          false,
+          'resetStreaming'
+        );
+      },
+
+      // ============================================================================
+      // Utility Actions
+      // ============================================================================
+
+      reset: () => {
+        set(initialState, false, 'reset');
+      },
+
+      clearAllData: () => {
+        // Clear all data and reset to initial state
+        set(initialState, false, 'clearAllData');
+      },
+
+      syncWithProject: (projectId) => {
+        // Clear chats and messages that don't belong to this project
+        set(
+          (state) => {
+            const projectChats = state.chats.filter((chat) => chat.project_id === projectId);
+            const projectChatIds = new Set(projectChats.map((chat) => chat.id));
+
+            // Keep only messages for chats in this project
+            const filteredMessages: Record<number, Message[]> = {};
+            Array.from(projectChatIds).forEach((chatId) => {
+              if (state.messages[chatId]) {
+                filteredMessages[chatId] = state.messages[chatId];
+              }
             });
-          }
 
-          set(
-            {
-              activeStreaming: false,
-              streamingMessageId: null,
-              streamingContent: '',
-            },
-            false,
-            'endStreaming'
-          );
-        },
+            // Clear current chat if it's not in this project
+            const newCurrentChatId =
+              state.currentChatId && projectChatIds.has(state.currentChatId)
+                ? state.currentChatId
+                : null;
 
-        resetStreaming: () => {
-          set(
-            {
-              activeStreaming: false,
-              streamingMessageId: null,
-              streamingContent: '',
-            },
-            false,
-            'resetStreaming'
-          );
-        },
-
-        // ============================================================================
-        // Utility Actions
-        // ============================================================================
-
-        reset: () => {
-          set(initialState, false, 'reset');
-        },
-      }),
-      {
-        name: 'chat-storage',
-        partialize: (state) => ({
-          // Only persist these fields
-          currentChatId: state.currentChatId,
-          chats: state.chats,
-          messages: state.messages,
-          // Don't persist streaming state
-        }),
-      }
-    ),
+            return {
+              chats: projectChats,
+              messages: filteredMessages,
+              currentChatId: newCurrentChatId,
+            };
+          },
+          false,
+          'syncWithProject'
+        );
+      },
+    }),
     { name: 'ChatStore' }
   )
 );
 
 // ============================================================================
-// Selectors (for optimized component re-renders)
+// Note: Use useShallow from 'zustand/react/shallow' when selecting arrays or objects
+// to prevent infinite loops. Example:
+//
+// const messages = useChatStore(
+//   useShallow((state) => state.messages[chatId] || [])
+// );
 // ============================================================================
-
-export const selectCurrentChat = (state: ChatState) =>
-  state.chats.find((chat) => chat.id === state.currentChatId);
-
-export const selectCurrentMessages = (state: ChatState) =>
-  state.currentChatId ? state.messages[state.currentChatId] || [] : [];
-
-export const selectChatMessages = (chatId: number) => (state: ChatState) =>
-  state.messages[chatId] || [];
-
-export const selectIsStreaming = (state: ChatState) => state.activeStreaming;
-
-export const selectStreamingContent = (state: ChatState) => state.streamingContent;

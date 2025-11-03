@@ -1,6 +1,7 @@
 'use client';
 
-import { useProjectStore, selectCurrentProject, selectProjects } from '@/stores/projectStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useProjectStore } from '@/stores/projectStore';
 import {
   Select,
   SelectContent,
@@ -11,8 +12,10 @@ import {
 import { Folder } from 'lucide-react';
 
 export default function ProjectSelector() {
-  const currentProject = useProjectStore(selectCurrentProject);
-  const projects = useProjectStore(selectProjects);
+  const currentProject = useProjectStore(
+    useShallow((state) => state.projects.find((project) => project.id === state.currentProjectId))
+  );
+  const projects = useProjectStore(useShallow((state) => state.projects));
   const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
 
   if (projects.length === 0) {

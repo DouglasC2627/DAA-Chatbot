@@ -67,6 +67,7 @@ const WS_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 class WebSocketClient {
   private socket: Socket | null = null;
   private isConnecting = false;
+  private connectionPromise: Promise<void> | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
@@ -87,20 +88,22 @@ class WebSocketClient {
   // ============================================================================
 
   connect(auth?: { token?: string }): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (this.socket?.connected) {
-        resolve();
-        return;
-      }
+    // If already connected, return resolved promise
+    if (this.socket?.connected) {
+      return Promise.resolve();
+    }
 
-      if (this.isConnecting) {
-        reject(new Error('Connection already in progress'));
-        return;
-      }
+    // If connection is in progress, return the existing promise
+    if (this.isConnecting && this.connectionPromise) {
+      console.log('[WebSocket] Connection already in progress, waiting for it to complete...');
+      return this.connectionPromise;
+    }
 
-      this.isConnecting = true;
-      this.updateStatus('connecting');
+    // Start new connection
+    this.isConnecting = true;
+    this.updateStatus('connecting');
 
+    this.connectionPromise = new Promise((resolve, reject) => {
       this.socket = io(WS_URL, {
         path: '/socket.io',
         transports: ['websocket', 'polling'],
@@ -115,6 +118,7 @@ class WebSocketClient {
 
       this.socket.on('connect', () => {
         this.isConnecting = false;
+        this.connectionPromise = null;
         this.reconnectAttempts = 0;
         this.updateStatus('connected');
         console.log('[WebSocket] Connected:', this.socket?.id);
@@ -124,6 +128,7 @@ class WebSocketClient {
       this.socket.on('connect_error', (error: Error) => {
         console.error('[WebSocket] Connection error:', error);
         this.isConnecting = false;
+        this.connectionPromise = null;
         this.reconnectAttempts++;
 
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
@@ -140,11 +145,14 @@ class WebSocketClient {
       setTimeout(() => {
         if (this.isConnecting) {
           this.isConnecting = false;
+          this.connectionPromise = null;
           this.updateStatus('error');
           reject(new Error('Connection timeout'));
         }
       }, 10000);
     });
+
+    return this.connectionPromise;
   }
 
   disconnect(): void {

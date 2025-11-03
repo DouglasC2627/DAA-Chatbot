@@ -136,16 +136,13 @@ export const useProjectStore = create<ProjectState>()(
 );
 
 // ============================================================================
-// Selectors (for optimized component re-renders)
+// Note: Use useShallow from 'zustand/react/shallow' when selecting arrays or objects
+// to prevent infinite loops. Example:
+//
+// const projects = useProjectStore(
+//   useShallow((state) => state.projects)
+// );
 // ============================================================================
-
-export const selectCurrentProject = (state: ProjectState) =>
-  state.projects.find((project) => project.id === state.currentProjectId);
-
-export const selectProjectById = (projectId: number) => (state: ProjectState) =>
-  state.projects.find((project) => project.id === projectId);
-
-export const selectProjects = (state: ProjectState) => state.projects;
 
 export const selectIsLoading = (state: ProjectState) => state.isLoading;
 

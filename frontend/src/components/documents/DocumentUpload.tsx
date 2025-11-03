@@ -2,8 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useShallow } from 'zustand/react/shallow';
 import { useDocumentStore } from '@/stores/documentStore';
-import { useProjectStore, selectCurrentProject } from '@/stores/projectStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, File, X, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -36,7 +37,9 @@ export default function DocumentUpload() {
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  const currentProject = useProjectStore(selectCurrentProject);
+  const currentProject = useProjectStore(
+    useShallow((state) => state.projects.find((project) => project.id === state.currentProjectId))
+  );
   const addDocument = useDocumentStore((state) => state.addDocument);
   const { toast } = useToast();
 

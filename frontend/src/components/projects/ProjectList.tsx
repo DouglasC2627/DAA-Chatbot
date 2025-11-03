@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useProjectStore, selectProjects } from '@/stores/projectStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useProjectStore } from '@/stores/projectStore';
 import ProjectCard from './ProjectCard';
 import ProjectSettings from './ProjectSettings';
 import ProjectDeleteConfirm from './ProjectDeleteConfirm';
@@ -12,7 +13,7 @@ import { projectApi } from '@/lib/api';
 
 export default function ProjectList() {
   const router = useRouter();
-  const projects = useProjectStore(selectProjects);
+  const projects = useProjectStore(useShallow((state) => state.projects));
   const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
   const setProjects = useProjectStore((state) => state.setProjects);
 

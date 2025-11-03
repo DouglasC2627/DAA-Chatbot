@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useDocumentStore, selectProjectDocuments } from '@/stores/documentStore';
-import { useProjectStore, selectCurrentProject } from '@/stores/projectStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useDocumentStore } from '@/stores/documentStore';
+import { useProjectStore } from '@/stores/projectStore';
 import DocumentCard from './DocumentCard';
 import DocumentPreview from './DocumentPreview';
 import { Document, DocumentStatus } from '@/types';
@@ -12,7 +13,9 @@ import { useDocumentUpdates, useWebSocketConnection, useProjectRoom } from '@/li
 import { documentApi } from '@/lib/api';
 
 export default function DocumentList() {
-  const currentProject = useProjectStore(selectCurrentProject);
+  const currentProject = useProjectStore(
+    useShallow((state) => state.projects.find((project) => project.id === state.currentProjectId))
+  );
   const allDocuments = useDocumentStore((state) => state.documents);
   const setDocuments = useDocumentStore((state) => state.setDocuments);
   const updateDocument = useDocumentStore((state) => state.updateDocument);
