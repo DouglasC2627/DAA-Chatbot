@@ -189,8 +189,8 @@ async def list_projects(
                 chat_count=project.chat_count,
                 total_chunks=project.total_chunks,
                 settings=project.settings,
-                created_at=project.created_at.isoformat() if project.created_at else None,
-                updated_at=project.updated_at.isoformat() if project.updated_at else None
+                created_at=format_datetime(project.created_at),
+                updated_at=format_datetime(project.updated_at)
             )
             for project in projects
         ]

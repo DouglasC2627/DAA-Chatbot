@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Project } from '@/types';
 import {
   Card,
@@ -28,6 +29,17 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({ project, onSelect, onEdit, onDelete }: ProjectCardProps) {
+  const [, setTick] = useState(0);
+
+  // Update the relative time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((tick) => tick + 1);
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleCardClick = () => {
     onSelect?.(project);
   };
@@ -42,7 +54,7 @@ export default function ProjectCard({ project, onSelect, onEdit, onDelete }: Pro
     onDelete?.(project);
   };
 
-  // Calculate if project has been updated since creation (more than 1 minute difference)
+  // Calculate dates - these will update every minute due to the tick state
   const createdDate = new Date(project.created_at);
   const updatedDate = new Date(project.updated_at);
   const hasBeenUpdated = differenceInSeconds(updatedDate, createdDate) > 60;
