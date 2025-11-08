@@ -133,7 +133,7 @@ chroma.sqlite3
 *.map
 
 # Documentation
-ABOUT.md
+ABOUT.md 
 CLAUDE.md
 
 # Package manager locks (optional)
