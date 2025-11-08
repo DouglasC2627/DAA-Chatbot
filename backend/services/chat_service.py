@@ -299,6 +299,10 @@ class ChatService:
             if chat.message_count == 1 and role == MessageRole.USER:
                 chat.title = chat.generate_title(content)
 
+            # Update project's updated_at timestamp to reflect activity
+            from crud.project import project as project_crud
+            await project_crud.touch(db, chat.project_id)
+
             await db.commit()
             await db.refresh(message)
 

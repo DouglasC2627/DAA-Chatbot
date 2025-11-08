@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, and_
 
 from models import Project
+from models.base import utc_now
 from models.document import Document
 from models.chat import Chat
 from crud.base import CRUDBase
@@ -152,6 +153,25 @@ class CRUDProject(CRUDBase[Project]):
             return False
 
         project.soft_delete()
+        await db.flush()
+        return True
+
+    async def touch(self, db: AsyncSession, project_id: int) -> bool:
+        """
+        Update the project's updated_at timestamp to current time.
+
+        Args:
+            db: Database session
+            project_id: Project ID
+
+        Returns:
+            True if successful, False if project not found
+        """
+        project = await self.get(db, project_id)
+        if not project:
+            return False
+
+        project.updated_at = utc_now()
         await db.flush()
         return True
 
