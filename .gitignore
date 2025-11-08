@@ -128,15 +128,15 @@ chroma.sqlite3
 *.bak
 *.backup
 
-# User uploaded documents (backend only)
-# backend/storage/documents/ is already ignored above (line 85)
-# Frontend documents folder is tracked in git
-
 # Build artifacts
 *.wasm
 *.map
 
-# Package manager locks (optional - uncomment if you want to ignore)
+# Documentation
+ABOUT.md
+CLAUDE.md
+
+# Package manager locks (optional)
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
