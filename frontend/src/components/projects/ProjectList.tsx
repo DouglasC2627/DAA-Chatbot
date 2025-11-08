@@ -44,7 +44,7 @@ export default function ProjectList() {
 
   const handleSelectProject = (project: Project) => {
     setCurrentProject(project.id);
-    router.push(`/chat/${project.id}`);
+    router.push(`/projects/${project.id}`);
   };
 
   const handleEditProject = (project: Project) => {

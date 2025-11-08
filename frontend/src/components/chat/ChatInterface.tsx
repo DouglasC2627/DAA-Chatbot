@@ -18,14 +18,17 @@ import type { SourceDocument } from '@/lib/websocket';
 
 interface ChatInterfaceProps {
   projectId: number;
+  chatId?: number;
+  initialMessage?: string;
 }
 
-export default function ChatInterface({ projectId }: ChatInterfaceProps) {
+export default function ChatInterface({ projectId, chatId, initialMessage }: ChatInterfaceProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [streamingSources, setStreamingSources] = useState<SourceDocument[]>([]);
+  const [messagesLoaded, setMessagesLoaded] = useState(false);
   const assistantMessageIdRef = useRef<number | null>(null);
 
   // Get project details - use useShallow to prevent infinite loops
@@ -72,6 +75,15 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
     // Don't initialize if project not found
     if (!project) {
       console.log(`[ChatInterface] Project ${projectId} not found in store, waiting...`);
+      return;
+    }
+
+    // If chatId is provided externally, use it directly and skip initialization
+    if (chatId) {
+      console.log(`[ChatInterface] Using provided chatId ${chatId}, skipping initialization`);
+      const { setCurrentChat } = useChatStore.getState();
+      setCurrentChat(chatId);
+      initializedProjects.current.add(projectId);
       return;
     }
 
@@ -167,22 +179,25 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
       // No cleanup needed - initialization will complete and update Zustand store
       // which persists across component mounts
     };
-    // Only depend on projectId - toast is stable and shouldn't cause re-initialization
+    // Only depend on projectId and chatId - toast is stable and shouldn't cause re-initialization
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, chatId]);
 
   // Step 2: Load messages when current chat changes
   useEffect(() => {
     if (!currentChatId) {
+      setMessagesLoaded(false);
       return;
     }
 
     // Skip if already loaded
     if (loadedMessagesRef.current.has(currentChatId)) {
+      setMessagesLoaded(true);
       return;
     }
 
     let isMounted = true;
+    setMessagesLoaded(false);
 
     const loadMessages = async () => {
       try {
@@ -200,12 +215,14 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
         const { setMessages } = useChatStore.getState();
         setMessages(currentChatId, transformedMessages);
         loadedMessagesRef.current.add(currentChatId);
+        setMessagesLoaded(true);
 
         console.log(
           `[ChatInterface] Loaded ${existingMessages.length} messages for chat ${currentChatId}`
         );
       } catch (error) {
         console.error('[ChatInterface] Failed to load messages:', error);
+        setMessagesLoaded(true); // Still mark as loaded even on error to prevent infinite waiting
       }
     };
 
@@ -277,74 +294,104 @@ export default function ChatInterface({ projectId }: ChatInterfaceProps) {
     onError: handleError,
   });
 
-  const handleSendMessage = async (content: string) => {
-    if (!currentChatId || !project) {
-      toast({
-        title: 'Error',
-        description: 'No active chat session',
-        variant: 'destructive',
-      });
-      return;
+  const handleSendMessage = useCallback(
+    async (content: string) => {
+      if (!currentChatId || !project) {
+        toast({
+          title: 'Error',
+          description: 'No active chat session',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!isConnected) {
+        toast({
+          title: 'Connection Error',
+          description: 'WebSocket not connected. Please wait and try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      try {
+        // Get store actions
+        const { addMessage: storeAddMessage } = useChatStore.getState();
+
+        // Add user message
+        const userMessage = {
+          id: Date.now(),
+          chat_id: currentChatId,
+          role: MessageRole.USER,
+          content,
+          created_at: new Date().toISOString(),
+        };
+
+        storeAddMessage(currentChatId, userMessage);
+
+        // Create placeholder assistant message for streaming
+        const assistantMessageId = Date.now() + 1;
+        assistantMessageIdRef.current = assistantMessageId;
+
+        const assistantMessage = {
+          id: assistantMessageId,
+          chat_id: currentChatId,
+          role: MessageRole.ASSISTANT,
+          content: '',
+          created_at: new Date().toISOString(),
+        };
+
+        storeAddMessage(currentChatId, assistantMessage);
+
+        // Set generating state
+        setIsGenerating(true);
+        setStreamingContent('');
+        setStreamingSources([]);
+
+        // Send message via WebSocket
+        sendWSMessage(content, {
+          include_history: true,
+          temperature: 0.7,
+        });
+      } catch (error) {
+        console.error('Error sending message:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to send message. Please try again.',
+          variant: 'destructive',
+        });
+        setIsGenerating(false);
+      }
+    },
+    [currentChatId, project, isConnected, sendWSMessage, toast]
+  );
+
+  // Step 3: Handle initial message if provided (for new chat creation from project page)
+  const initialMessageSentRef = useRef(false);
+
+  // Reset the sent flag when chat changes
+  useEffect(() => {
+    initialMessageSentRef.current = false;
+  }, [currentChatId]);
+
+  useEffect(() => {
+    // Only send if we have all required data and haven't sent yet
+    if (
+      initialMessage &&
+      currentChatId &&
+      isConnected &&
+      messagesLoaded &&
+      !initialMessageSentRef.current
+    ) {
+      console.log(`[ChatInterface] Sending initial message: ${initialMessage}`);
+      initialMessageSentRef.current = true;
+
+      // Use setTimeout to ensure the UI is fully initialized
+      setTimeout(() => {
+        handleSendMessage(initialMessage);
+      }, 500);
     }
-
-    if (!isConnected) {
-      toast({
-        title: 'Connection Error',
-        description: 'WebSocket not connected. Please wait and try again.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      // Get store actions
-      const { addMessage: storeAddMessage } = useChatStore.getState();
-
-      // Add user message
-      const userMessage = {
-        id: Date.now(),
-        chat_id: currentChatId,
-        role: MessageRole.USER,
-        content,
-        created_at: new Date().toISOString(),
-      };
-
-      storeAddMessage(currentChatId, userMessage);
-
-      // Create placeholder assistant message for streaming
-      const assistantMessageId = Date.now() + 1;
-      assistantMessageIdRef.current = assistantMessageId;
-
-      const assistantMessage = {
-        id: assistantMessageId,
-        chat_id: currentChatId,
-        role: MessageRole.ASSISTANT,
-        content: '',
-        created_at: new Date().toISOString(),
-      };
-
-      storeAddMessage(currentChatId, assistantMessage);
-
-      // Set generating state
-      setIsGenerating(true);
-      setStreamingContent('');
-      setStreamingSources([]);
-
-      // Send message via WebSocket
-      sendWSMessage(content, {
-        include_history: true,
-        temperature: 0.7,
-      });
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
-        variant: 'destructive',
-      });
-      setIsGenerating(false);
-    }
-  };
+  }, [initialMessage, currentChatId, isConnected, messagesLoaded, handleSendMessage]);
 
   // Update streaming message in real-time
   useEffect(() => {

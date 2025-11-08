@@ -142,12 +142,7 @@ export default function ChatHistoryPanel({
                 {searchQuery ? 'No chats found' : 'No chat history yet'}
               </p>
               {!searchQuery && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onNewChat}
-                  className="mt-3"
-                >
+                <Button variant="outline" size="sm" onClick={onNewChat} className="mt-3">
                   Start a new chat
                 </Button>
               )}
@@ -165,9 +160,7 @@ export default function ChatHistoryPanel({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium text-sm truncate">
-                          {chat.title}
-                        </h3>
+                        <h3 className="font-medium text-sm truncate">{chat.title}</h3>
                         {chat.message_count !== undefined && chat.message_count > 0 && (
                           <Badge variant="secondary" className="text-xs">
                             {chat.message_count}
