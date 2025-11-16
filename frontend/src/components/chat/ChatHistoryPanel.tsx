@@ -180,7 +180,12 @@ export default function ChatHistoryPanel({
                         chat={chat}
                         onUpdate={loadChats}
                         onDelete={() => {
+                          // Optimistically remove chat from state immediately
+                          setChats((prevChats) => prevChats.filter((c) => c.id !== chat.id));
+
+                          // Reload chats to ensure consistency with backend
                           loadChats();
+
                           // If deleted chat was current, trigger navigation
                           if (currentChatId === chat.id && onNewChat) {
                             onNewChat();

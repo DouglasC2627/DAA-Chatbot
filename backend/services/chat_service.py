@@ -142,7 +142,7 @@ class ChatService:
         limit: int = 100
     ) -> List[Chat]:
         """
-        List chats for a project.
+        List chats for a project (excludes soft-deleted chats).
 
         Args:
             db: Database session
@@ -156,7 +156,12 @@ class ChatService:
         try:
             query = (
                 select(Chat)
-                .where(Chat.project_id == project_id)
+                .where(
+                    and_(
+                        Chat.project_id == project_id,
+                        Chat.deleted_at.is_(None)  # Exclude soft-deleted chats
+                    )
+                )
                 .order_by(Chat.updated_at.desc())
                 .offset(skip)
                 .limit(limit)
@@ -606,7 +611,7 @@ class ChatService:
         limit: int = 20
     ) -> List[Chat]:
         """
-        Search for chats by title or message content.
+        Search for chats by title or message content (excludes soft-deleted chats).
 
         Args:
             db: Database session
@@ -626,7 +631,8 @@ class ChatService:
                 .where(
                     and_(
                         Chat.project_id == project_id,
-                        Chat.title.ilike(search_pattern)
+                        Chat.title.ilike(search_pattern),
+                        Chat.deleted_at.is_(None)  # Exclude soft-deleted chats
                     )
                 )
                 .order_by(Chat.updated_at.desc())
