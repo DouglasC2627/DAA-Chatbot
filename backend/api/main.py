@@ -16,6 +16,7 @@ from core.config import settings
 from api.routes import llm, chat, documents, projects, maintenance
 from api.websocket.chat_ws import sio
 from core.database import sync_engine, async_engine
+from utils.ollama_service import check_ollama_on_startup, ollama_service
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,14 @@ async def lifespan(app: FastAPI):
             if not directory.exists():
                 directory.mkdir(parents=True, exist_ok=True)
                 logger.info(f"📁 Created storage directory: {directory}")
+
+        # Check Ollama service status
+        ollama_available, ollama_message = check_ollama_on_startup()
+        if ollama_available:
+            logger.info(f"✅ Ollama check: {ollama_message}")
+        else:
+            logger.warning(f"⚠️  Ollama check: {ollama_message}")
+            logger.warning("   The API will start but LLM features will not work until Ollama is running.")
 
         logger.info("✅ Startup complete - API is ready")
 
@@ -131,7 +140,7 @@ async def api_health() -> Dict[str, str]:
     Enhanced API health check endpoint.
 
     Returns:
-        Health status including database connection and table verification
+        Health status including database connection, table verification, and Ollama status
     """
     health_status = {
         "status": "ok",
@@ -159,6 +168,27 @@ async def api_health() -> Dict[str, str]:
     except Exception as e:
         health_status["database_status"] = "error"
         health_status["database_error"] = str(e)
+        health_status["status"] = "degraded"
+
+    # Check Ollama service status
+    try:
+        is_running = ollama_service.check_status()
+        health_status["ollama_status"] = "running" if is_running else "not_running"
+
+        if is_running:
+            # Get model count
+            success, models, message = ollama_service.get_models()
+            if success:
+                health_status["ollama_models_count"] = len(models)
+            else:
+                health_status["ollama_warning"] = message
+        else:
+            health_status["status"] = "degraded"
+            health_status["ollama_warning"] = "Ollama is not running. Start with 'ollama serve'"
+
+    except Exception as e:
+        health_status["ollama_status"] = "error"
+        health_status["ollama_error"] = str(e)
         health_status["status"] = "degraded"
 
     return health_status

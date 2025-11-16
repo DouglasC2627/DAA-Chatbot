@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"
     EMBEDDING_MODEL: str = "nomic-embed-text"
+    OLLAMA_AUTO_START: bool = True  # Attempt to auto-start Ollama if not running
+    OLLAMA_STARTUP_TIMEOUT: int = 30  # Seconds to wait for Ollama to start
 
     # Database Configuration
     DATABASE_URL: str = "sqlite:///./storage/sqlite/app.db"
