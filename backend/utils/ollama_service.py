@@ -132,7 +132,7 @@ class OllamaServiceManager:
                 time.sleep(1)
 
             # Timeout reached
-            logger.warning(f"⏰ Timeout waiting for Ollama to start after {self.timeout}s")
+            logger.warning(f"Timeout waiting for Ollama to start after {self.timeout}s")
             return False, f"Ollama process started but didn't respond within {self.timeout}s. It may still be initializing."
 
         except PermissionError as e:
