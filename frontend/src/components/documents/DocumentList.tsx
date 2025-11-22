@@ -11,6 +11,16 @@ import { FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentUpdates, useWebSocketConnection, useProjectRoom } from '@/lib/websocket';
 import { documentApi } from '@/lib/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function DocumentList() {
   const currentProject = useProjectStore(
@@ -23,6 +33,7 @@ export default function DocumentList() {
   const { toast } = useToast();
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [downloadDocument, setDownloadDocument] = useState<Document | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Connect to WebSocket and join project room
@@ -119,20 +130,27 @@ export default function DocumentList() {
     }
   };
 
-  const handleDownload = async (document: Document) => {
+  const handleDownload = (document: Document) => {
+    setDownloadDocument(document);
+  };
+
+  const performDownload = async () => {
+    if (!downloadDocument) return;
+
+    setDownloadDocument(null);
     try {
       toast({
         title: 'Download Started',
-        description: `Downloading "${document.filename}"`,
+        description: `Downloading "${downloadDocument.filename}"`,
       });
 
-      const blob = await documentApi.download(document.id);
+      const blob = await documentApi.download(downloadDocument.id);
 
       // Create a download link and trigger it
       const url = window.URL.createObjectURL(blob);
       const link = window.document.createElement('a');
       link.href = url;
-      link.download = document.filename;
+      link.download = downloadDocument.filename;
       window.document.body.appendChild(link);
       link.click();
       window.document.body.removeChild(link);
@@ -140,7 +158,7 @@ export default function DocumentList() {
 
       toast({
         title: 'Download Complete',
-        description: `"${document.filename}" has been downloaded`,
+        description: `"${downloadDocument.filename}" has been downloaded`,
       });
     } catch (error) {
       toast({
@@ -149,6 +167,14 @@ export default function DocumentList() {
         variant: 'destructive',
       });
     }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   const handlePreview = (document: Document) => {
@@ -201,6 +227,33 @@ export default function DocumentList() {
           onClose={() => setSelectedDocument(null)}
         />
       )}
+
+      {/* Download Confirmation Dialog */}
+      <AlertDialog
+        open={!!downloadDocument}
+        onOpenChange={(open: boolean) => !open && setDownloadDocument(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Download</AlertDialogTitle>
+            <AlertDialogDescription>
+              {downloadDocument && (
+                <>
+                  Are you sure you want to download "{downloadDocument.filename}"?
+                  <br />
+                  <span className="text-sm text-muted-foreground">
+                    Size: {formatFileSize(downloadDocument.file_size)}
+                  </span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performDownload}>Download</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
