@@ -33,7 +33,7 @@ from sqlalchemy import select, or_, and_
 import uuid
 import asyncio
 
-from core.database import get_db
+from core.database import get_db, SessionLocal
 from core.config import settings
 from core.embeddings import embedding_service
 from core.vectorstore import vector_store
@@ -117,6 +117,33 @@ class DocumentSearchResponse(BaseModel):
 
 
 # Helper functions
+def document_to_response(document: Document) -> DocumentResponse:
+    """
+    Convert a Document model to DocumentResponse.
+
+    Args:
+        document: Document model instance
+
+    Returns:
+        DocumentResponse
+    """
+    return DocumentResponse(
+        id=document.id,
+        project_id=document.project_id,
+        filename=document.filename,
+        file_type=document.file_type.value,
+        file_size=document.file_size,
+        status=document.status.value,
+        page_count=document.page_count,
+        word_count=document.word_count,
+        chunk_count=document.chunk_count,
+        error_message=document.error_message,
+        created_at=format_datetime(document.created_at),
+        updated_at=format_datetime(document.updated_at)
+    )
+
+
+
 async def process_document_background(
     document_id: int,
     file_path: Path,
@@ -137,8 +164,7 @@ async def process_document_background(
         file_path: Path to uploaded file
         project_id: Project ID
     """
-    from core.database import SessionLocal
-
+    
     try:
         logger.info(f"Starting background processing for document {document_id}")
 
@@ -309,11 +335,11 @@ async def upload_document(
         # Validate file type
         try:
             doc_type = document_processor.get_document_type(file.filename)
-        except Exception:
+        except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Unsupported file type: {file.filename}"
-            )
+            ) from exc
 
         # Validate file size
         file_size = 0
@@ -610,10 +636,10 @@ async def delete_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete document: {str(e)}"
-        )
+        ) from e
 
 
-@router.get("/documents/{document_id}/download")
+@router.api_route("/documents/{document_id}/download", methods=["GET", "HEAD", "OPTIONS"])
 async def download_document(
     document_id: int,
     db: AsyncSession = Depends(get_db)
@@ -642,9 +668,10 @@ async def download_document(
             detail=f"Document {document_id} not found"
         )
 
-    file_path = Path(document.file_path)
-
-    if not file_path.exists():
+    try:
+        file_path = file_storage.get_file_path(document.file_path)
+    except Exception as e:
+        logger.error(f"Error retrieving file path for document {document_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document file not found on disk"
@@ -653,7 +680,10 @@ async def download_document(
     return FileResponse(
         path=file_path,
         filename=document.filename,
-        media_type='application/octet-stream'
+        media_type=document.mime_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{document.filename}"'
+        }
     )
 
 

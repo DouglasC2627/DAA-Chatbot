@@ -23,7 +23,10 @@ import type {
 // Axios Instance Configuration
 // ============================================================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Use relative URL in browser to leverage Next.js rewrites, direct URL in SSR
+const API_BASE_URL = typeof window === 'undefined'
+  ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
+  : ''; // Empty string makes axios use relative URLs
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Create Socket.IO async server
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',  # TODO: Configure based on environment
+    cors_allowed_origins=[],  # Let FastAPI CORSMiddleware handle CORS
     logger=True,
     engineio_logger=True
 )

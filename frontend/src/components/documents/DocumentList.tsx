@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useDocumentStore } from '@/stores/documentStore';
 import { useProjectStore } from '@/stores/projectStore';
 import DocumentCard from './DocumentCard';
-import DocumentPreview from './DocumentPreview';
+import dynamic from 'next/dynamic';
 import { Document, DocumentStatus } from '@/types';
 import { FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+// Dynamically import DocumentPreview to avoid SSR issues with PDF.js
+const DocumentPreview = dynamic(() => import('./DocumentPreview'), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function DocumentList() {
   const currentProject = useProjectStore(
