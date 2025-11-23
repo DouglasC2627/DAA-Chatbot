@@ -18,7 +18,7 @@ A fully-local, privacy-focused RAG (Retrieval-Augmented Generation) chatbot syst
 - **Framework**: FastAPI (Python 3.11+)
 - **Database**: SQLAlchemy + SQLite
 - **Vector Store**: ChromaDB
-- **LLM**: Ollama (Llama 3.2, Mistral, Mixtral)
+- **LLM**: Ollama (Llama 3.2)
 - **Embeddings**: nomic-embed-text or mxbai-embed-large
 
 ### Frontend
