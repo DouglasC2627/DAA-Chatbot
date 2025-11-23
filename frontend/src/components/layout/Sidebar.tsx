@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Folder, FileText, MessageSquare, Settings, Plus, Home } from 'lucide-react';
+import { Folder, FileText, Settings, Plus, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProjectSelector from './ProjectSelector';
 
@@ -11,7 +11,6 @@ const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Projects', href: '/projects', icon: Folder },
   { name: 'Documents', href: '/documents', icon: FileText },
-  { name: 'Chats', href: '/chats', icon: MessageSquare },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

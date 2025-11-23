@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, ExternalLink } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { documentApi } from '@/lib/api';
@@ -138,43 +138,6 @@ export default function DocumentPreview({ document, open, onClose }: DocumentPre
     }
   };
 
-  const handleOpenExternal = async () => {
-    if (!isPdf) {
-      // For non-PDF files, download instead of opening
-      toast({
-        title: 'Downloading Document',
-        description: `Non-PDF files cannot be opened in browser. Downloading "${document.filename}" instead.`,
-      });
-      await performDownload();
-      return;
-    }
-
-    // For PDF files, open in new tab
-    try {
-      const blob = await documentApi.download(document.id);
-      const url = window.URL.createObjectURL(blob);
-
-      // Open in new tab
-      window.open(url, '_blank');
-
-      // Clean up after a delay to ensure the file loads
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 1000);
-
-      toast({
-        title: 'Opening Document',
-        description: `Opening "${document.filename}" in new tab`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Failed to Open',
-        description: error instanceof Error ? error.message : 'Failed to open document',
-        variant: 'destructive',
-      });
-    }
-  };
-
 
   return (
     <>
@@ -279,17 +242,6 @@ export default function DocumentPreview({ document, open, onClose }: DocumentPre
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-4 border-t">
-              <Button onClick={handleDownload} className="flex-1">
-                <Download className="mr-2 h-4 w-4" />
-                Download
-              </Button>
-              <Button variant="outline" onClick={handleOpenExternal} className="flex-1">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                {isPdf ? 'Open External' : 'Download'}
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
