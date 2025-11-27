@@ -14,6 +14,9 @@ import type {
   LLMModel,
   SystemStats,
   SystemSettings,
+  UserSettings,
+  InstalledModels,
+  PopularModel,
   APIResponse,
   PaginatedResponse,
   BulkDocumentUploadResponse,
@@ -350,13 +353,47 @@ export const integrationApi = {
 // ============================================================================
 
 export const systemApi = {
-  // List available LLM models
+  // Get current settings from database
+  getSettings: async (): Promise<UserSettings> => {
+    const response = await apiClient.get<UserSettings>('/api/settings');
+    return response.data;
+  },
+
+  // Update model settings
+  updateModels: async (data: {
+    llm_model?: string;
+    embedding_model?: string;
+  }): Promise<UserSettings> => {
+    const response = await apiClient.put<UserSettings>('/api/settings/models', data);
+    return response.data;
+  },
+
+  // Get installed models
+  getInstalledModels: async (): Promise<InstalledModels> => {
+    const response = await apiClient.get<InstalledModels>('/api/settings/models/installed');
+    return response.data;
+  },
+
+  // Get popular models
+  getPopularModels: async (): Promise<{
+    llm_models: PopularModel[];
+    embedding_models: PopularModel[];
+  }> => {
+    const response = await apiClient.get('/api/settings/models/popular');
+    return response.data;
+  },
+
+  // Install a model
+  pullModel: async (modelName: string): Promise<void> => {
+    await apiClient.post('/api/settings/models/pull', { model_name: modelName });
+  },
+
+  // Legacy methods (kept for compatibility)
   listModels: async (): Promise<LLMModel[]> => {
     const response = await apiClient.get<APIResponse<LLMModel[]>>('/api/system/models');
     return response.data.data || [];
   },
 
-  // Get system statistics
   getStats: async (): Promise<SystemStats> => {
     const response = await apiClient.get<APIResponse<SystemStats>>('/api/system/stats');
     if (!response.data.data) {
@@ -365,7 +402,6 @@ export const systemApi = {
     return response.data.data;
   },
 
-  // Update system settings
   updateSettings: async (settings: Partial<SystemSettings>): Promise<SystemSettings> => {
     const response = await apiClient.post<APIResponse<SystemSettings>>(
       '/api/system/settings',
@@ -377,7 +413,6 @@ export const systemApi = {
     return response.data.data;
   },
 
-  // Health check
   healthCheck: async (): Promise<{ status: string; timestamp: string }> => {
     const response =
       await apiClient.get<APIResponse<{ status: string; timestamp: string }>>('/api/health');

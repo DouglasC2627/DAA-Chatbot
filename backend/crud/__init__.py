@@ -4,6 +4,7 @@ from .project import project
 from .document import document
 from .chat import chat
 from .message import message
+from .user_settings import user_settings
 
 __all__ = [
     "CRUDBase",
@@ -11,4 +12,5 @@ __all__ = [
     "document",
     "chat",
     "message",
+    "user_settings",
 ]

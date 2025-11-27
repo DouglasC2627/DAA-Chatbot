@@ -13,9 +13,9 @@ from sqlalchemy import inspect
 sys.path.append(str(Path(__file__).parent.parent))
 
 from core.config import settings
-from api.routes import llm, chat, documents, projects, maintenance
+from api.routes import llm, chat, documents, projects, maintenance, settings as settings_router
 from api.websocket.chat_ws import sio
-from core.database import sync_engine, async_engine
+from core.database import sync_engine, async_engine, SessionLocal
 from utils.ollama_service import check_ollama_on_startup, ollama_service
 
 logger = logging.getLogger(__name__)
@@ -74,6 +74,29 @@ async def lifespan(app: FastAPI):
             logger.warning(f"⚠️  Ollama check: {ollama_message}")
             logger.warning("   The API will start but LLM features will not work until Ollama is running.")
 
+        # Load model settings from database
+        try:
+            from crud.user_settings import user_settings as crud_user_settings
+            from core.llm import ollama_client
+            from core.embeddings import embedding_service
+
+            async with SessionLocal() as db:
+                user_settings_obj = await crud_user_settings.get_or_create_default(db)
+                await db.commit()
+
+                # Override defaults with database settings
+                if user_settings_obj.default_llm_model:
+                    ollama_client.switch_model(user_settings_obj.default_llm_model)
+                    logger.info(f"✅ Loaded LLM model from database: {user_settings_obj.default_llm_model}")
+
+                if user_settings_obj.default_embedding_model:
+                    embedding_service.switch_model(user_settings_obj.default_embedding_model)
+                    logger.info(f"✅ Loaded embedding model from database: {user_settings_obj.default_embedding_model}")
+
+        except Exception as e:
+            logger.warning(f"⚠️  Could not load model settings from database: {e}")
+            logger.warning("   Using default models from environment configuration")
+
         logger.info("✅ Startup complete - API is ready")
 
     except Exception as e:
@@ -110,6 +133,7 @@ app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(projects.router)
 app.include_router(maintenance.router)
+app.include_router(settings_router.router)
 
 
 class HealthResponse(BaseModel):

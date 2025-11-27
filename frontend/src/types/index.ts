@@ -207,6 +207,36 @@ export interface SystemSettings {
   retrieval_k: number;
 }
 
+// User Settings Types (for Settings Page)
+export interface UserSettings {
+  default_llm_model: string;
+  default_embedding_model: string;
+  default_chunk_size: number;
+  default_chunk_overlap: number;
+  default_retrieval_k: number;
+  theme: string;
+}
+
+export interface ModelInfo {
+  name: string;
+  size: number;
+  modified_at?: string;
+}
+
+export interface InstalledModels {
+  llm_models: ModelInfo[];
+  embedding_models: ModelInfo[];
+  current_llm: string;
+  current_embedding: string;
+}
+
+export interface PopularModel {
+  name: string;
+  size: string;
+  description: string;
+  installed: boolean;
+}
+
 // ============================================================================
 // API Response Types
 // ============================================================================
