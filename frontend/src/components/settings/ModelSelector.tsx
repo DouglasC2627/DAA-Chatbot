@@ -33,6 +33,10 @@ export default function ModelSelector({
   const [isChanging, setIsChanging] = useState(false);
   const { toast } = useToast();
 
+  // Check if current model is in the installed models list
+  const isCurrentModelInstalled = installedModels.some(m => m.name === currentModel);
+  const selectValue = isCurrentModelInstalled ? currentModel : (installedModels[0]?.name || '');
+
   const handleModelChange = async (modelName: string) => {
     if (modelName === currentModel) return;
 
@@ -69,27 +73,17 @@ export default function ModelSelector({
       <Label htmlFor={`${type}-model`}>{label}</Label>
       <div className="flex items-center gap-2">
         <Select
-          value={currentModel}
+          value={selectValue}
           onValueChange={handleModelChange}
           disabled={disabled || isChanging || installedModels.length === 0}
         >
           <SelectTrigger id={`${type}-model`} className="w-full">
             <SelectValue placeholder={`Select ${type} model`} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper" sideOffset={5}>
             {installedModels.map((model) => (
               <SelectItem key={model.name} value={model.name}>
-                <div className="flex items-center justify-between w-full">
-                  <span className="flex items-center gap-2">
-                    {model.name}
-                    {model.name === currentModel && (
-                      <Check className="h-4 w-4 text-primary" />
-                    )}
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-4">
-                    {formatSize(model.size)}
-                  </span>
-                </div>
+                {model.name} ({formatSize(model.size)})
               </SelectItem>
             ))}
           </SelectContent>

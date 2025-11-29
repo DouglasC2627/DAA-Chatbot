@@ -76,8 +76,9 @@ class OllamaClient:
             True if connection successful, False otherwise
         """
         try:
-            models = await self.async_client.list()
-            logger.info(f"Successfully connected to Ollama. Found {len(models.get('models', []))} models.")
+            response = await self.async_client.list()
+            model_count = len(response.models) if hasattr(response, 'models') else 0
+            logger.info(f"Successfully connected to Ollama. Found {model_count} models.")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to Ollama at {self.host}: {str(e)}")
@@ -95,7 +96,19 @@ class OllamaClient:
         """
         try:
             response = await self.async_client.list()
-            models = response.get('models', [])
+            # Access models attribute directly from ListResponse object
+            models_list = response.models
+
+            # Convert model objects to dictionaries
+            models = []
+            for model in models_list:
+                models.append({
+                    'name': model.model,
+                    'size': model.size,
+                    'modified_at': str(model.modified_at) if model.modified_at else None,
+                    'digest': getattr(model, 'digest', None)
+                })
+
             logger.info(f"Retrieved {len(models)} models from Ollama")
             return models
         except Exception as e:
