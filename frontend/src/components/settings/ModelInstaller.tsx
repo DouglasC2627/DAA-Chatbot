@@ -300,7 +300,7 @@ export default function ModelInstaller({ popularModels, onModelInstalled }: Mode
 
           {/* Search Results Dropdown */}
           {showLlmResults && llmSearchResults.length > 0 && (
-            <Card className="absolute z-50 w-full mt-2 max-h-80 overflow-y-auto shadow-lg">
+            <Card className="absolute z-50 w-full mt-2 max-h-80 overflow-y-auto shadow-2xl border-2 border-border dark:bg-slate-900">
               <CardContent className="p-2">
                 <div className="space-y-1">
                   {llmSearchResults.map((model) =>
@@ -312,20 +312,20 @@ export default function ModelInstaller({ popularModels, onModelInstalled }: Mode
           )}
 
           {showLlmResults && llmSearchResults.length === 0 && llmSearchQuery.length >= 2 && !isSearching && (
-            <Card className="absolute z-50 w-full mt-2 shadow-lg">
+            <Card className="absolute z-50 w-full mt-2 shadow-2xl border-2 border-primary/50 bg-card dark:bg-slate-900">
               <CardContent className="p-4 space-y-3">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    No models found for <span className="font-medium">"{llmSearchQuery}"</span>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    No models found for <span className="font-semibold text-primary">"{llmSearchQuery}"</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Model not in our curated list? You can add it manually.
                   </p>
                 </div>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
-                  className="w-full"
+                  className="w-full bg-primary hover:bg-primary/90"
                   onClick={() => handleManualAdd(llmSearchQuery, 'llm')}
                 >
                   <Download className="h-4 w-4 mr-2" />
@@ -386,7 +386,7 @@ export default function ModelInstaller({ popularModels, onModelInstalled }: Mode
 
           {/* Search Results Dropdown */}
           {showEmbeddingResults && embeddingSearchResults.length > 0 && (
-            <Card className="absolute z-50 w-full mt-2 max-h-80 overflow-y-auto shadow-lg">
+            <Card className="absolute z-50 w-full mt-2 max-h-80 overflow-y-auto shadow-2xl border-2 border-border dark:bg-slate-900">
               <CardContent className="p-2">
                 <div className="space-y-1">
                   {embeddingSearchResults.map((model) =>
@@ -398,20 +398,20 @@ export default function ModelInstaller({ popularModels, onModelInstalled }: Mode
           )}
 
           {showEmbeddingResults && embeddingSearchResults.length === 0 && embeddingSearchQuery.length >= 2 && !isSearching && (
-            <Card className="absolute z-50 w-full mt-2 shadow-lg">
+            <Card className="absolute z-50 w-full mt-2 shadow-2xl border-2 border-primary/50 bg-card dark:bg-slate-900">
               <CardContent className="p-4 space-y-3">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    No models found for <span className="font-medium">"{embeddingSearchQuery}"</span>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    No models found for <span className="font-semibold text-primary">"{embeddingSearchQuery}"</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Model not in our curated list? You can add it manually.
                   </p>
                 </div>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
-                  className="w-full"
+                  className="w-full bg-primary hover:bg-primary/90"
                   onClick={() => handleManualAdd(embeddingSearchQuery, 'embedding')}
                 >
                   <Download className="h-4 w-4 mr-2" />
