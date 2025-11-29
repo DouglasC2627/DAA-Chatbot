@@ -10,7 +10,7 @@ This module provides REST API endpoints for system settings management:
 """
 import logging
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -82,6 +82,22 @@ class ModelPullResponse(BaseModel):
     success: bool
     model_name: str
     message: str
+
+
+class SearchModelRequest(BaseModel):
+    """Request model for searching models."""
+    query: str = Field(..., min_length=1, description="Search query")
+    model_type: Optional[str] = Field(None, description="Filter by type: 'llm' or 'embedding'")
+
+
+class SearchResultModel(BaseModel):
+    """Search result model."""
+    name: str
+    size: str
+    description: str
+    type: str
+    installed: bool
+    featured: Optional[bool] = False
 
 
 # API Endpoints
@@ -273,4 +289,47 @@ async def pull_model(request: ModelPullRequest) -> ModelPullResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to pull model: {str(e)}"
+        )
+
+
+@router.get("/models/search", response_model=List[SearchResultModel])
+async def search_models(
+    query: str = Query(..., min_length=1, description="Search query"),
+    model_type: Optional[str] = Query(None, description="Filter by type: 'llm' or 'embedding'")
+) -> List[SearchResultModel]:
+    """
+    Search for models in Ollama library.
+
+    Searches through available models by name and description.
+
+    Args:
+        query: Search query string
+        model_type: Optional filter ('llm' or 'embedding')
+
+    Returns:
+        List of matching models with installation status
+
+    Raises:
+        400: If invalid model_type provided
+        500: If search fails
+    """
+    if model_type and model_type not in ["llm", "embedding"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="model_type must be 'llm' or 'embedding'"
+        )
+
+    try:
+        results = await settings_service.search_models(query, model_type)
+
+        return [
+            SearchResultModel(**result)
+            for result in results
+        ]
+
+    except Exception as e:
+        logger.error(f"Error searching models with query '{query}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search models: {str(e)}"
         )

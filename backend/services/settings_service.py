@@ -19,20 +19,77 @@ from core.embeddings import embedding_service
 logger = logging.getLogger(__name__)
 
 
-# Popular models configuration
+# Popular models configuration - Expanded database for search
 POPULAR_MODELS = {
     "llm": [
-        {"name": "llama3.2", "size": "2.0GB", "description": "Fast and capable, great for general use"},
-        {"name": "llama3.1", "size": "4.7GB", "description": "More powerful, better reasoning"},
-        {"name": "mistral", "size": "4.1GB", "description": "Fast and efficient"},
-        {"name": "mixtral", "size": "26GB", "description": "Mixture of experts, very capable"},
-        {"name": "qwen2.5", "size": "4.7GB", "description": "Strong multilingual capabilities"},
-        {"name": "phi3", "size": "2.3GB", "description": "Small but powerful"},
+        # Featured/Popular models
+        {"name": "llama3.2", "size": "2.0GB", "description": "Fast and capable, great for general use", "featured": True},
+        {"name": "llama3.1", "size": "4.7GB", "description": "More powerful, better reasoning", "featured": True},
+        {"name": "mistral", "size": "4.1GB", "description": "Fast and efficient", "featured": True},
+        {"name": "mixtral", "size": "26GB", "description": "Mixture of experts, very capable", "featured": True},
+        {"name": "qwen2.5", "size": "4.7GB", "description": "Strong multilingual capabilities", "featured": True},
+        {"name": "phi3", "size": "2.3GB", "description": "Small but powerful", "featured": True},
+
+        # Llama family
+        {"name": "llama3", "size": "4.7GB", "description": "Meta's Llama 3 model"},
+        {"name": "llama2", "size": "3.8GB", "description": "Meta's Llama 2 model"},
+        {"name": "codellama", "size": "3.8GB", "description": "Code-specialized Llama model"},
+
+        # Mistral family
+        {"name": "mistral-nemo", "size": "7.1GB", "description": "12B model with 128k context"},
+        {"name": "mistral-small", "size": "12GB", "description": "22B parameter model"},
+        {"name": "dolphin-mistral", "size": "4.1GB", "description": "Uncensored Mistral variant"},
+
+        # Qwen family
+        {"name": "qwen2.5-coder", "size": "4.7GB", "description": "Code-specialized Qwen model"},
+        {"name": "qwen2", "size": "4.4GB", "description": "Alibaba's Qwen 2 model"},
+
+        # Phi family
+        {"name": "phi3.5", "size": "2.2GB", "description": "Improved Phi 3.5 model"},
+
+        # Gemma family
+        {"name": "gemma2", "size": "5.4GB", "description": "Google's Gemma 2 9B model"},
+        {"name": "gemma", "size": "5.0GB", "description": "Google's Gemma model"},
+        {"name": "codegemma", "size": "5.0GB", "description": "Code-specialized Gemma"},
+
+        # DeepSeek family
+        {"name": "deepseek-coder", "size": "6.7GB", "description": "Excellent code model"},
+        {"name": "deepseek-r1", "size": "3.9GB", "description": "DeepSeek reasoning model"},
+        {"name": "deepseek-llm", "size": "6.7GB", "description": "DeepSeek general model"},
+
+        # Chat models
+        {"name": "openchat", "size": "4.1GB", "description": "Fine-tuned for chat"},
+        {"name": "starling-lm", "size": "4.1GB", "description": "RLAIF trained chat model"},
+        {"name": "neural-chat", "size": "4.1GB", "description": "Fine-tuned chat model"},
+        {"name": "vicuna", "size": "3.8GB", "description": "ChatGPT-style model"},
+
+        # Instruction models
+        {"name": "nous-hermes2", "size": "4.1GB", "description": "Instruction-tuned model"},
+        {"name": "wizardlm2", "size": "4.7GB", "description": "Instruction following model"},
+
+        # Yi models
+        {"name": "yi", "size": "6.7GB", "description": "01.AI's Yi model"},
+        {"name": "yi-coder", "size": "6.7GB", "description": "Yi code model"},
+
+        # Small/Efficient models
+        {"name": "orca-mini", "size": "1.9GB", "description": "Lightweight Orca model"},
+        {"name": "stablelm2", "size": "1.6GB", "description": "Stability AI's model"},
+
+        # Other notable models
+        {"name": "solar", "size": "6.1GB", "description": "Upstage Solar model"},
+        {"name": "falcon", "size": "3.8GB", "description": "TII's Falcon model"},
     ],
     "embedding": [
-        {"name": "nomic-embed-text", "size": "274MB", "description": "High quality embeddings"},
-        {"name": "mxbai-embed-large", "size": "669MB", "description": "Larger, more accurate"},
-        {"name": "all-minilm", "size": "23MB", "description": "Lightweight and fast"},
+        # Featured/Popular embeddings
+        {"name": "nomic-embed-text", "size": "274MB", "description": "High quality embeddings, 8k context", "featured": True},
+        {"name": "mxbai-embed-large", "size": "669MB", "description": "Larger, more accurate embeddings", "featured": True},
+        {"name": "all-minilm", "size": "23MB", "description": "Lightweight and fast", "featured": True},
+
+        # Additional embeddings
+        {"name": "bge-large", "size": "1.3GB", "description": "BAAI general embedding, high quality"},
+        {"name": "bge-m3", "size": "2.2GB", "description": "Multi-lingual, multi-functional"},
+        {"name": "snowflake-arctic-embed", "size": "335MB", "description": "Snowflake's embedding model"},
+        {"name": "gte-large", "size": "670MB", "description": "Alibaba's GTE embedding"},
     ]
 }
 
@@ -216,7 +273,7 @@ class SettingsService:
     @staticmethod
     async def get_popular_models() -> Dict[str, List[Dict[str, Any]]]:
         """
-        Get popular models with installation status.
+        Get popular/featured models with installation status.
 
         Returns:
             Dictionary with llm_models and embedding_models lists,
@@ -231,20 +288,22 @@ class SettingsService:
                 if model.get('name', '').split(':')[0].strip() != ''
             }
 
-            # Add installation status to popular models
+            # Filter only featured models
             llm_models = []
             for model in POPULAR_MODELS["llm"]:
-                llm_models.append({
-                    **model,
-                    "installed": model["name"] in installed_names
-                })
+                if model.get("featured", False):
+                    llm_models.append({
+                        **model,
+                        "installed": model["name"] in installed_names
+                    })
 
             embedding_models = []
             for model in POPULAR_MODELS["embedding"]:
-                embedding_models.append({
-                    **model,
-                    "installed": model["name"] in installed_names
-                })
+                if model.get("featured", False):
+                    embedding_models.append({
+                        **model,
+                        "installed": model["name"] in installed_names
+                    })
 
             return {
                 "llm_models": llm_models,
@@ -253,15 +312,70 @@ class SettingsService:
 
         except Exception as e:
             logger.error(f"Failed to get popular models: {e}")
-            # Return popular models without installation status
+            # Return featured models without installation status
             return {
                 "llm_models": [
-                    {**model, "installed": False} for model in POPULAR_MODELS["llm"]
+                    {**model, "installed": False}
+                    for model in POPULAR_MODELS["llm"]
+                    if model.get("featured", False)
                 ],
                 "embedding_models": [
-                    {**model, "installed": False} for model in POPULAR_MODELS["embedding"]
+                    {**model, "installed": False}
+                    for model in POPULAR_MODELS["embedding"]
+                    if model.get("featured", False)
                 ]
             }
+
+    @staticmethod
+    async def search_models(query: str, model_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Search for models in the Ollama library.
+
+        Args:
+            query: Search query (model name)
+            model_type: Optional filter - 'llm' or 'embedding'
+
+        Returns:
+            List of matching models with installation status
+        """
+        try:
+            query_lower = query.lower().strip()
+
+            # Get installed models
+            all_models = await ollama_client.list_models()
+            installed_names = {
+                model.get('name', '').split(':')[0]
+                for model in all_models
+                if model.get('name', '').split(':')[0].strip() != ''
+            }
+
+            results = []
+
+            # Search in LLM models
+            if model_type is None or model_type == "llm":
+                for model in POPULAR_MODELS["llm"]:
+                    if query_lower in model["name"].lower() or query_lower in model["description"].lower():
+                        results.append({
+                            **model,
+                            "type": "llm",
+                            "installed": model["name"] in installed_names
+                        })
+
+            # Search in embedding models
+            if model_type is None or model_type == "embedding":
+                for model in POPULAR_MODELS["embedding"]:
+                    if query_lower in model["name"].lower() or query_lower in model["description"].lower():
+                        results.append({
+                            **model,
+                            "type": "embedding",
+                            "installed": model["name"] in installed_names
+                        })
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Failed to search models: {e}")
+            return []
 
     @staticmethod
     async def pull_model(model_name: str) -> bool:

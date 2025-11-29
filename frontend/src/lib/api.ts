@@ -388,6 +388,16 @@ export const systemApi = {
     await apiClient.post('/api/settings/models/pull', { model_name: modelName });
   },
 
+  // Search for models
+  searchModels: async (query: string, modelType?: 'llm' | 'embedding'): Promise<PopularModel[]> => {
+    const params = new URLSearchParams({ query });
+    if (modelType) {
+      params.append('model_type', modelType);
+    }
+    const response = await apiClient.get(`/api/settings/models/search?${params.toString()}`);
+    return response.data;
+  },
+
   // Legacy methods (kept for compatibility)
   listModels: async (): Promise<LLMModel[]> => {
     const response = await apiClient.get<APIResponse<LLMModel[]>>('/api/system/models');
