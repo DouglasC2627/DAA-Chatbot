@@ -14,7 +14,7 @@ export default function Footer() {
         </div>
 
         <div className="flex items-center gap-4">
-          <p className="text-xs text-muted-foreground">v0.1.0 • Local RAG</p>
+          <p className="text-xs text-muted-foreground">DouglasC267</p>
         </div>
       </div>
     </footer>
