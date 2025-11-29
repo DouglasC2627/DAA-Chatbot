@@ -97,6 +97,20 @@ export default function ModelInstaller({ popularModels, onModelInstalled }: Mode
     setShowEmbeddingResults(false);
   };
 
+  const handleManualAdd = (modelName: string, type: 'llm' | 'embedding') => {
+    // Create a custom model entry for manual installation
+    const customModel: PopularModel = {
+      name: modelName.trim(),
+      size: 'Unknown',
+      description: `Custom ${type === 'llm' ? 'language' : 'embedding'} model from Ollama library`,
+      installed: false,
+    };
+
+    setConfirmModel(customModel);
+    setShowLlmResults(false);
+    setShowEmbeddingResults(false);
+  };
+
   const handleConfirmInstall = async () => {
     if (!confirmModel) return;
 
@@ -299,8 +313,27 @@ export default function ModelInstaller({ popularModels, onModelInstalled }: Mode
 
           {showLlmResults && llmSearchResults.length === 0 && llmSearchQuery.length >= 2 && !isSearching && (
             <Card className="absolute z-50 w-full mt-2 shadow-lg">
-              <CardContent className="p-4 text-center text-sm text-muted-foreground">
-                No models found for "{llmSearchQuery}"
+              <CardContent className="p-4 space-y-3">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    No models found for <span className="font-medium">"{llmSearchQuery}"</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Model not in our curated list? You can add it manually.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleManualAdd(llmSearchQuery, 'llm')}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Add "{llmSearchQuery}" manually
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  This will attempt to pull the model from Ollama's library
+                </p>
               </CardContent>
             </Card>
           )}
@@ -366,8 +399,27 @@ export default function ModelInstaller({ popularModels, onModelInstalled }: Mode
 
           {showEmbeddingResults && embeddingSearchResults.length === 0 && embeddingSearchQuery.length >= 2 && !isSearching && (
             <Card className="absolute z-50 w-full mt-2 shadow-lg">
-              <CardContent className="p-4 text-center text-sm text-muted-foreground">
-                No models found for "{embeddingSearchQuery}"
+              <CardContent className="p-4 space-y-3">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    No models found for <span className="font-medium">"{embeddingSearchQuery}"</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Model not in our curated list? You can add it manually.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleManualAdd(embeddingSearchQuery, 'embedding')}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Add "{embeddingSearchQuery}" manually
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  This will attempt to pull the model from Ollama's library
+                </p>
               </CardContent>
             </Card>
           )}
@@ -405,6 +457,20 @@ export default function ModelInstaller({ popularModels, onModelInstalled }: Mode
                   <span className="font-medium">Size:</span> {confirmModel?.size}
                 </p>
               </div>
+
+              {/* Warning for manually added models */}
+              {confirmModel && confirmModel.size === 'Unknown' && (
+                <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
+                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                    ⚠️ Manual Installation
+                  </p>
+                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                    This model is not in our curated list. We'll attempt to pull it from Ollama's library.
+                    If the model doesn't exist, the installation will fail.
+                  </p>
+                </div>
+              )}
+
               {confirmModel?.installed && (
                 <div className="bg-muted/50 border rounded-md p-3">
                   <p className="text-sm font-medium flex items-center gap-2">

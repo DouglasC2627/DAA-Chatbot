@@ -78,6 +78,11 @@ POPULAR_MODELS = {
         # Other notable models
         {"name": "solar", "size": "6.1GB", "description": "Upstage Solar model"},
         {"name": "falcon", "size": "3.8GB", "description": "TII's Falcon model"},
+
+        # Newest models (2025)
+        {"name": "gpt-oss", "size": "3.0GB", "description": "Open source GPT implementation"},
+        {"name": "llama3.3", "size": "42GB", "description": "Latest Llama 3.3 model"},
+        {"name": "qwen2.5-instruct", "size": "4.7GB", "description": "Qwen 2.5 instruction-tuned"},
     ],
     "embedding": [
         # Featured/Popular embeddings
@@ -90,6 +95,10 @@ POPULAR_MODELS = {
         {"name": "bge-m3", "size": "2.2GB", "description": "Multi-lingual, multi-functional"},
         {"name": "snowflake-arctic-embed", "size": "335MB", "description": "Snowflake's embedding model"},
         {"name": "gte-large", "size": "670MB", "description": "Alibaba's GTE embedding"},
+
+        # Newest embeddings (2025)
+        {"name": "embeddinggemma", "size": "274MB", "description": "Google's Gemma-based embedding model"},
+        {"name": "jina-embeddings-v3", "size": "570MB", "description": "Jina AI's latest embedding model"},
     ]
 }
 
