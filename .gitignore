@@ -135,6 +135,7 @@ chroma.sqlite3
 # Documentation
 ABOUT.md 
 CLAUDE.md
+TASKS.md
 
 # Package manager locks (optional)
 # package-lock.json
