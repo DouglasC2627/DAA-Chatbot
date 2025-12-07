@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useShallow } from 'zustand/react/shallow';
 import { useProjectStore } from '@/stores/projectStore';
 import { useChatStore } from '@/stores/chatStore';
+import { useChatSettingsStore } from '@/stores/chatSettingsStore';
 import { MessageRole } from '@/types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -30,6 +31,9 @@ export default function ChatInterface({ projectId, chatId, initialMessage }: Cha
   const [streamingSources, setStreamingSources] = useState<SourceDocument[]>([]);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const assistantMessageIdRef = useRef<number | null>(null);
+
+  // Get chat settings
+  const { chatSettings } = useChatSettingsStore();
 
   // Get project details - use useShallow to prevent infinite loops
   const project = useProjectStore(
@@ -348,10 +352,13 @@ export default function ChatInterface({ projectId, chatId, initialMessage }: Cha
         setStreamingContent('');
         setStreamingSources([]);
 
-        // Send message via WebSocket
+        // Send message via WebSocket with settings from store
         sendWSMessage(content, {
           include_history: true,
-          temperature: 0.7,
+          temperature: chatSettings.temperature,
+          top_k: chatSettings.topK,
+          max_tokens: chatSettings.maxTokens,
+          history_length: chatSettings.historyLength,
         });
       } catch (error) {
         console.error('Error sending message:', error);

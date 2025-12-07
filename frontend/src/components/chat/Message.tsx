@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import SourceReferences from './SourceReferences';
 import ReactMarkdown from 'react-markdown';
+import { useChatSettingsStore } from '@/stores/chatSettingsStore';
 
 interface MessageProps {
   message: MessageType;
@@ -20,6 +21,7 @@ interface MessageProps {
 export default function Message({ message, showSources = true, useMarkdown = true }: MessageProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const { uiPreferences } = useChatSettingsStore();
 
   const isUser = message.role === MessageRole.USER;
   const isAssistant = message.role === MessageRole.ASSISTANT;
@@ -67,11 +69,19 @@ export default function Message({ message, showSources = true, useMarkdown = tru
       <div className={`flex flex-col gap-3 max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
         <Card className={`p-4 ${isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
           {isAssistant && useMarkdown ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-sm prose-p:leading-relaxed">
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed"
+              style={{ fontSize: `${uiPreferences.fontSize}px` }}
+            >
               <ReactMarkdown>{processedContent}</ReactMarkdown>
             </div>
           ) : (
-            <div className="whitespace-pre-wrap break-words text-sm">{message.content}</div>
+            <div
+              className="whitespace-pre-wrap break-words"
+              style={{ fontSize: `${uiPreferences.fontSize}px` }}
+            >
+              {message.content}
+            </div>
           )}
         </Card>
 

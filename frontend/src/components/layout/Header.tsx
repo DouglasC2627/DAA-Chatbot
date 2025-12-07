@@ -1,17 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/theme-provider';
 import MobileNav from './MobileNav';
+import ChatSettingsPanel from '@/components/chat/ChatSettingsPanel';
 import { cn } from '@/lib/utils';
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const isActive = (path: string) => pathname === path;
 
@@ -65,6 +68,16 @@ export default function Header() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Open settings"
+          >
+            <Settings className="h-4 w-4 md:h-5 md:w-5" />
+            <span className="sr-only">Settings</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             aria-label="Toggle theme"
           >
@@ -76,6 +89,9 @@ export default function Header() {
           <MobileNav />
         </div>
       </div>
+
+      {/* Settings Panel */}
+      <ChatSettingsPanel open={settingsOpen} onOpenChange={setSettingsOpen} />
     </header>
   );
 }

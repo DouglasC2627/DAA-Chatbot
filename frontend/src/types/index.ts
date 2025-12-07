@@ -120,6 +120,14 @@ export interface SourceReference {
 export interface SendMessageRequest {
   content: string;
   chat_id?: number;
+  settings?: ChatSettingsMetadata;
+}
+
+export interface ChatSettingsMetadata {
+  top_k?: number;
+  temperature?: number;
+  max_tokens?: number;
+  history_length?: number;
 }
 
 export interface SendMessageResponse {
