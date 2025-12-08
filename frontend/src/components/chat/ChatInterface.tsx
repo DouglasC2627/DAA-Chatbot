@@ -74,7 +74,7 @@ export default function ChatInterface({ projectId, chatId, initialMessage }: Cha
     }));
   };
 
-  // Step 1: Initialize chat session for the project (fetch or create chat)
+  // Initialize chat session for the project (fetch or create chat)
   useEffect(() => {
     // Don't initialize if project not found
     if (!project) {
@@ -111,7 +111,7 @@ export default function ChatInterface({ projectId, chatId, initialMessage }: Cha
       try {
         console.log(`[ChatInterface] Initializing chat for project ${projectId}`);
 
-        // First, sync store with current project (removes chats from other projects)
+        // sync store with current project (removes chats from other projects)
         syncWithProject(projectId);
         console.log(`[ChatInterface] Store synced with project ${projectId}`);
 
@@ -187,7 +187,7 @@ export default function ChatInterface({ projectId, chatId, initialMessage }: Cha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, chatId]);
 
-  // Step 2: Load messages when current chat changes
+  // Load messages when current chat changes
   useEffect(() => {
     if (!currentChatId) {
       setMessagesLoaded(false);
@@ -373,7 +373,7 @@ export default function ChatInterface({ projectId, chatId, initialMessage }: Cha
     [currentChatId, project, isConnected, sendWSMessage, toast]
   );
 
-  // Step 3: Handle initial message if provided (for new chat creation from project page)
+  // Handle initial message if provided (for new chat creation from project page)
   const initialMessageSentRef = useRef(false);
 
   // Reset the sent flag when chat changes
@@ -456,9 +456,6 @@ export default function ChatInterface({ projectId, chatId, initialMessage }: Cha
             <div className="text-xs text-muted-foreground">
               Chat ID: {currentChatId || 'none'} | WS: {isConnected ? '✓' : '✗'}
             </div>
-            <Button variant="ghost" size="icon" title="Chat Settings" className="h-8 w-8">
-              <Settings className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </div>
