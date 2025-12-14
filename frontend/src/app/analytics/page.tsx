@@ -1,10 +1,15 @@
 'use client';
 
-import { BarChart3, Sparkles } from 'lucide-react';
+import { Sparkles, AlertCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useProjectStore } from '@/stores/projectStore';
+import EmbeddingStats from '@/components/analytics/EmbeddingStats';
+import RetrievalTester from '@/components/analytics/RetrievalTester';
 
 export default function AnalyticsPage() {
+  const currentProjectId = useProjectStore((state) => state.currentProjectId);
+
   return (
     <MainLayout>
       <div className="space-y-8">
@@ -16,90 +21,53 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
+        {/* No Project Selected Warning */}
+        {!currentProjectId && (
+          <Card className="border-yellow-500/50 bg-yellow-500/10">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <p className="font-medium">No Project Selected</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Please select a project from the sidebar to view analytics.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Chunks
-              </CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">-</div>
-              <p className="text-xs text-muted-foreground">
-                Across all documents
-              </p>
-            </CardContent>
-          </Card>
+        {currentProjectId && (
+          <EmbeddingStats projectId={currentProjectId} />
+        )}
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Documents
-              </CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">-</div>
-              <p className="text-xs text-muted-foreground">
-                In current project
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Embedding Dimension
-              </CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">-</div>
-              <p className="text-xs text-muted-foreground">
-                Vector size
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Avg Similarity
-              </CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">-</div>
-              <p className="text-xs text-muted-foreground">
-                Between chunks
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Retrieval Tester */}
+        {currentProjectId && (
+          <RetrievalTester projectId={currentProjectId} />
+        )}
 
         {/* Feature Overview Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <CardTitle>Embeddings Analytics Dashboard</CardTitle>
-            </div>
-            <CardDescription>
-              Powerful visualization and analysis tools for your document embeddings
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Feature List */}
+        {currentProjectId && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <CardTitle>More Features Coming Soon</CardTitle>
+              </div>
+              <CardDescription>
+                Additional visualization tools being developed
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <h3 className="font-semibold flex items-center gap-2">
                     📊 2D/3D Scatter Plots
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Visualize embeddings in reduced dimensional space using t-SNE, UMAP, or PCA. See how your documents cluster and relate to each other.
+                    Visualize embeddings in reduced dimensional space using t-SNE or PCA. See how your documents cluster and relate to each other.
                   </p>
                 </div>
 
@@ -123,26 +91,17 @@ export default function AnalyticsPage() {
 
                 <div className="space-y-2">
                   <h3 className="font-semibold flex items-center gap-2">
-                    🔍 Retrieval Testing
+                    ✅ Working Now
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Test queries in real-time to see which chunks are retrieved and their relevance scores. Perfect for RAG optimization.
+                    <strong>Embedding Statistics:</strong> View real-time stats above<br />
+                    <strong>Retrieval Testing:</strong> Test queries and see results above
                   </p>
                 </div>
               </div>
-
-              {/* Status */}
-              <div className="border-t pt-4">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Status:</strong> Backend API is ready and functional. Frontend visualizations are under development.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  <strong>Available:</strong> PCA and t-SNE dimensionality reduction (UMAP requires additional setup)
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </MainLayout>
   );
