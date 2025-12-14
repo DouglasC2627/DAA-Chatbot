@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Folder, FileText, MessageSquare, Settings, Plus, Home, Menu } from 'lucide-react';
+import { Folder, FileText, MessageSquare, Settings, Plus, Home, Menu, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import ProjectSelector from './ProjectSelector';
@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Projects', href: '/projects', icon: Folder },
   { name: 'Documents', href: '/documents', icon: FileText },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Chats', href: '/chats', icon: MessageSquare },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

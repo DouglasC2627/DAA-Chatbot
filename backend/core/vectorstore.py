@@ -245,6 +245,53 @@ class VectorStore:
             print(f"Error getting collection count: {e}")
             return 0
 
+    def get_embeddings(
+        self,
+        project_id: int,
+        ids: Optional[List[str]] = None,
+        where: Optional[Dict[str, Any]] = None,
+        limit: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Fetch embeddings from a project's collection.
+
+        Args:
+            project_id: The project ID
+            ids: Optional list of specific document IDs to fetch
+            where: Optional metadata filter (e.g., {"document_id": 123})
+            limit: Optional maximum number of embeddings to return
+
+        Returns:
+            Dictionary containing ids, embeddings, documents, and metadatas
+            Format: {
+                'ids': List[str],
+                'embeddings': List[List[float]],
+                'documents': List[str],
+                'metadatas': List[Dict[str, Any]]
+            }
+        """
+        try:
+            collection = self.get_or_create_collection(project_id)
+
+            # Fetch embeddings with specified filters
+            result = collection.get(
+                ids=ids,
+                where=where,
+                limit=limit,
+                include=['embeddings', 'documents', 'metadatas']
+            )
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error getting embeddings: {e}")
+            return {
+                'ids': [],
+                'embeddings': [],
+                'documents': [],
+                'metadatas': []
+            }
+
     def list_collections(self) -> List[Dict[str, Any]]:
         """
         List all collections in the vector store.

@@ -13,7 +13,7 @@ from sqlalchemy import inspect
 sys.path.append(str(Path(__file__).parent.parent))
 
 from core.config import settings
-from api.routes import llm, chat, documents, projects, maintenance, settings as settings_router
+from api.routes import llm, chat, documents, projects, maintenance, settings as settings_router, analytics
 from api.websocket.chat_ws import sio
 from core.database import sync_engine, async_engine, SessionLocal
 from utils.ollama_service import check_ollama_on_startup, ollama_service
@@ -134,6 +134,7 @@ app.include_router(documents.router)
 app.include_router(projects.router)
 app.include_router(maintenance.router)
 app.include_router(settings_router.router)
+app.include_router(analytics.router)
 
 
 class HealthResponse(BaseModel):
