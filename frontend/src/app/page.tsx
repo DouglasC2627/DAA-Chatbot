@@ -67,7 +67,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <Zap className="h-8 w-8 mb-2 text-primary" />
-              <CardTitle>Smart RAG Pipeline</CardTitle>
+              <CardTitle>RAG Pipeline</CardTitle>
               <CardDescription>
                 Retrieval-Augmented Generation for accurate, context-aware responses.
               </CardDescription>
@@ -104,7 +104,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Experience smooth, real-time interaction with your chatbot.
+                Experience eal-time interaction with your chatbot.
               </p>
             </CardContent>
           </Card>
@@ -114,12 +114,12 @@ export default function Home() {
               <Slack className="h-8 w-8 mb-2 text-primary" />
               <CardTitle>Modern UI</CardTitle>
               <CardDescription>
-                Beautiful, responsive interface built with Next.js and shadcn/ui.
+                Interface built with Next.js and shadcn/ui.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Dark mode support and smooth animations for a delightful experience.
+                Dark mode support and smooth animations.
               </p>
             </CardContent>
           </Card>
