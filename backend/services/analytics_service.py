@@ -420,18 +420,19 @@ class AnalyticsService:
             retrieved_chunks = []
             scores = []
 
-            for i, chunk_id in enumerate(results['ids'][0]):
-                distance = results['distances'][0][i]
+            # Note: vector_store.search() already flattens results, so no [0] indexing needed
+            for i, chunk_id in enumerate(results['ids']):
+                distance = results['distances'][i]
                 score = 1 - distance  # Convert distance to similarity score
                 scores.append(score)
 
-                metadata = results['metadatas'][0][i]
+                metadata = results['metadatas'][i]
                 retrieved_chunks.append({
                     "chunk_id": chunk_id,
                     "document_id": metadata.get('document_id'),
                     "document_name": metadata.get('filename', 'Unknown'),
                     "chunk_index": metadata.get('chunk_index', 0),
-                    "text": results['documents'][0][i],
+                    "text": results['documents'][i],
                     "score": float(score),
                     "distance": float(distance)
                 })
