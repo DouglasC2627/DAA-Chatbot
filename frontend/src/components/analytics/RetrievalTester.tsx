@@ -94,7 +94,10 @@ export default function RetrievalTester({ projectId }: RetrievalTesterProps) {
 
         {/* Top K Selector */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">Top K:</label>
+          <div className="flex items-center">
+            <label className="text-sm font-medium">Top K:</label>
+            <InfoTooltip content="The number of most relevant chunks to retrieve. For example, Top K = 10 means the system will return the 10 chunks with the highest similarity scores to your query. Higher values give more context but may include less relevant results." />
+          </div>
           <select
             value={topK}
             onChange={(e) => setTopK(Number(e.target.value))}
