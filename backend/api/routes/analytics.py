@@ -90,6 +90,7 @@ class DimReductionPoint(BaseModel):
     y: float
     z: Optional[float] = None
     chunk_id: str
+    chunk_index: int
     document_id: int
     document_name: str
     text_preview: str
@@ -297,6 +298,7 @@ async def compute_dimensionality_reduction(
                 y=float(reduced_coords[i, 1]),
                 z=float(reduced_coords[i, 2]) if request.dimensions == 3 else None,
                 chunk_id=ed.chunk_id,
+                chunk_index=ed.chunk_index,
                 document_id=ed.document_id,
                 document_name=ed.document_name,
                 text_preview=text_preview
