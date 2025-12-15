@@ -37,6 +37,7 @@ export interface DimReductionPoint {
   y: number;
   z?: number;
   chunk_id: string;
+  chunk_index: number;
   document_id: number;
   document_name: string;
   text_preview: string;

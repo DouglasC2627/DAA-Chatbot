@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import analyticsApi from '@/lib/analytics-api';
 import type { EmbeddingStatsResponse } from '@/types/analytics';
 
@@ -97,7 +98,10 @@ export default function EmbeddingStats({ projectId }: EmbeddingStatsProps) {
       {/* Embedding Dimension */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Embedding Dimension</CardTitle>
+          <div className="flex items-center">
+            <CardTitle className="text-sm font-medium">Embedding Dimension</CardTitle>
+            <InfoTooltip content="The size of the vector representation for each text chunk. Higher dimensions can capture more nuanced semantic meaning. For example, 768 means each chunk is represented by 768 numbers." />
+          </div>
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -109,7 +113,10 @@ export default function EmbeddingStats({ projectId }: EmbeddingStatsProps) {
       {/* Average Similarity */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Avg Similarity</CardTitle>
+          <div className="flex items-center">
+            <CardTitle className="text-sm font-medium">Avg Similarity</CardTitle>
+            <InfoTooltip content="The average cosine similarity between all document chunks. This measures how semantically related your documents are. Higher values (closer to 100%) mean more similar content, while lower values indicate more diverse topics." />
+          </div>
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>

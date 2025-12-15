@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import analyticsApi from '@/lib/analytics-api';
 import type { TestRetrievalResponse } from '@/types/analytics';
 
@@ -52,7 +53,16 @@ export default function RetrievalTester({ projectId }: RetrievalTesterProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Retrieval Testing</CardTitle>
+        <div className="flex items-center">
+          <CardTitle>Retrieval Testing</CardTitle>
+          <InfoTooltip content={
+            <div>
+              <p className="mb-2"><strong>Retrieval Testing</strong> lets you test how well your RAG system finds relevant chunks for a given query.</p>
+              <p className="mb-2">The system converts your query to an embedding and finds the most similar chunks using cosine similarity.</p>
+              <p>Higher scores (closer to 100%) indicate better semantic matches between your query and the retrieved chunks.</p>
+            </div>
+          } />
+        </div>
         <CardDescription>
           Test queries to see which chunks are retrieved and their relevance scores
         </CardDescription>
