@@ -12,6 +12,7 @@ Modern, responsive frontend for the DAA Chatbot built with Next.js 14, TypeScrip
 - **Forms**: React Hook Form + Zod validation
 - **Real-time**: Socket.IO client for WebSocket streaming
 - **HTTP Client**: Axios
+- **Visualization**: Plotly.js (3D scatter plots), Recharts (2D charts)
 - **Icons**: Lucide React
 - **Animations**: Framer Motion
 
@@ -57,9 +58,12 @@ frontend/src/
 │   ├── globals.css        # Global styles and Tailwind imports
 │   ├── chat/              # Chat interface pages
 │   ├── projects/          # Project management pages
-│   └── documents/         # Document management pages
+│   ├── documents/         # Document management pages
+│   └── analytics/         # Embedding analytics dashboard
 ├── components/            # React components
-│   ├── ui/               # shadcn/ui primitives (Button, Card, Dialog, etc.)
+│   ├── ui/               # shadcn/ui primitives (Button, Card, Dialog, Tooltip, etc.)
+│   │   ├── tooltip.tsx            # Tooltip primitive wrapper
+│   │   └── info-tooltip.tsx       # Educational tooltip component
 │   ├── chat/             # Chat-specific components
 │   │   ├── MessageList.tsx        # Chat message display
 │   │   ├── MessageInput.tsx       # Message input form
@@ -70,10 +74,19 @@ frontend/src/
 │   ├── projects/         # Project components
 │   │   ├── ProjectCard.tsx        # Project display card
 │   │   └── CreateProject.tsx      # Project creation form
+│   ├── analytics/        # Analytics visualizations
+│   │   ├── EmbeddingVisualization.tsx  # 2D/3D scatter plots
+│   │   ├── ScatterPlot2D.tsx          # 2D chart (Recharts)
+│   │   ├── ScatterPlot3D.tsx          # 3D chart (Plotly.js)
+│   │   ├── SimilarityHeatmap.tsx      # Similarity matrix heatmap
+│   │   ├── EmbeddingTable.tsx         # Data table with search/export
+│   │   ├── EmbeddingStats.tsx         # Statistics cards
+│   │   └── RetrievalTester.tsx        # Query testing interface
 │   ├── layout/           # Layout components (Header, Sidebar, etc.)
 │   └── providers/        # React context providers
 ├── lib/                  # Utilities and configurations
 │   ├── api.ts           # Axios client and API functions
+│   ├── analytics-api.ts # Analytics API client
 │   ├── websocket.ts     # Socket.IO client setup
 │   └── utils.ts         # Helper functions
 ├── stores/              # Zustand state stores
@@ -81,7 +94,8 @@ frontend/src/
 │   ├── projectStore.ts  # Project data
 │   └── documentStore.ts # Document management
 ├── types/               # TypeScript type definitions
-│   └── index.ts         # Shared types
+│   ├── index.ts         # Shared types
+│   └── analytics.ts     # Analytics type definitions
 └── hooks/               # Custom React hooks
     └── useWebSocket.ts  # WebSocket connection hook
 ```
@@ -112,6 +126,14 @@ frontend/src/
 - Adaptive layouts for all screen sizes
 - Touch-friendly interactions
 - Accessible UI components
+
+### 5. Embedding Analytics Dashboard
+- **Visualization:** Interactive 2D/3D scatter plots with PCA, t-SNE, and UMAP dimensionality reduction
+- **Similarity Analysis:** Heatmaps showing cosine similarity between documents and chunks
+- **Data Exploration:** Searchable table with pagination, CSV export, and embedding statistics
+- **Retrieval Testing:** Test query interface to evaluate RAG performance with similarity scores
+- **Educational UI:** Hover tooltips explaining technical concepts (embedding dimensions, vector norms, cosine similarity, etc.)
+- **Performance:** Optimized for datasets with 1000+ embeddings using sampling and caching
 
 ## State Management
 
@@ -273,6 +295,87 @@ import { motion } from 'framer-motion'
 >
   Content
 </motion.div>
+```
+
+## Analytics Components
+
+### Analytics API Client
+
+The `analytics-api.ts` module provides methods for analytics endpoints:
+
+```typescript
+import analyticsApi from '@/lib/analytics-api'
+
+// Get embeddings data
+const data = await analyticsApi.getEmbeddings(projectId, {
+  limit: 500,
+  include_text: true
+})
+
+// Compute dimensionality reduction
+const result = await analyticsApi.getDimensionalityReduction(projectId, {
+  method: 'pca',
+  dimensions: 2,
+  n_samples: 500
+})
+
+// Get similarity matrix
+const matrix = await analyticsApi.getSimilarityMatrix(projectId, {
+  scope: 'document',
+  max_items: 20
+})
+
+// Test retrieval
+const results = await analyticsApi.testRetrieval(projectId, {
+  query: 'test query',
+  top_k: 10
+})
+```
+
+### Visualization Components
+
+#### EmbeddingVisualization
+Interactive scatter plot with method selection (PCA, t-SNE, UMAP) and dimension toggle (2D/3D):
+
+```typescript
+<EmbeddingVisualization projectId={projectId} />
+```
+
+#### SimilarityHeatmap
+Heatmap showing cosine similarity between documents or chunks:
+
+```typescript
+<SimilarityHeatmap
+  projectId={projectId}
+  documents={documents}
+/>
+```
+
+#### EmbeddingTable
+Searchable data table with pagination and CSV export:
+
+```typescript
+<EmbeddingTable projectId={projectId} />
+```
+
+#### RetrievalTester
+Query testing interface for evaluating RAG retrieval:
+
+```typescript
+<RetrievalTester projectId={projectId} />
+```
+
+### Educational Tooltips
+
+Use `InfoTooltip` component to explain technical terms:
+
+```typescript
+import { InfoTooltip } from '@/components/ui/info-tooltip'
+
+<div className="flex items-center">
+  <label>Embedding Dimension</label>
+  <InfoTooltip content="The size of the vector representation for each text chunk. Higher dimensions can capture more nuanced semantic meaning." />
+</div>
 ```
 
 ## Testing

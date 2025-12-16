@@ -11,6 +11,11 @@ A fully-local, privacy-focused RAG (Retrieval-Augmented Generation) chatbot syst
 - **Multi-Format Support**: PDF, DOCX, TXT, MD, CSV, XLSX
 - **Project Isolation**: Organize documents and conversations by project
 - **Real-time Streaming**: WebSocket-based streaming responses
+- **Embedding Analytics**: Visualize and analyze document embeddings with interactive dashboards
+  - 2D/3D scatter plots (PCA, t-SNE, UMAP)
+  - Similarity heatmaps (document and chunk level)
+  - Embedding statistics and data tables
+  - Retrieval quality testing
 
 ## Tech Stack
 
@@ -20,6 +25,7 @@ A fully-local, privacy-focused RAG (Retrieval-Augmented Generation) chatbot syst
 - **Vector Store**: ChromaDB
 - **LLM**: Ollama (Llama 3.2)
 - **Embeddings**: nomic-embed-text or mxbai-embed-large
+- **Analytics**: scikit-learn (PCA, t-SNE), umap-learn (UMAP)
 
 ### Frontend
 - **Framework**: Next.js 14 with App Router
@@ -27,6 +33,7 @@ A fully-local, privacy-focused RAG (Retrieval-Augmented Generation) chatbot syst
 - **Styling**: Tailwind CSS + shadcn/ui
 - **State Management**: Zustand + React Query
 - **Real-time**: Socket.io
+- **Visualization**: Plotly.js, Recharts
 
 ## Prerequisites
 
@@ -191,7 +198,7 @@ Git hooks are configured to run code quality checks before commits:
 daa-chatbot/
 ├── backend/              # FastAPI backend
 │   ├── api/
-│   │   ├── routes/      # API endpoints (chat, documents, projects, llm)
+│   │   ├── routes/      # API endpoints (chat, documents, projects, llm, analytics)
 │   │   ├── websocket/   # WebSocket handlers for real-time chat
 │   │   └── main.py      # FastAPI app entry point with Socket.IO
 │   ├── core/            # Core functionality
@@ -202,10 +209,11 @@ daa-chatbot/
 │   │   └── chunking.py        # Text splitting strategies
 │   ├── models/          # SQLAlchemy database models
 │   ├── services/        # Business logic
-│   │   ├── chat_service.py       # Conversation management
-│   │   ├── document_processor.py # Document text extraction
-│   │   ├── project_service.py    # Project CRUD operations
-│   │   └── file_storage.py       # File management
+│   │   ├── chat_service.py        # Conversation management
+│   │   ├── document_processor.py  # Document text extraction
+│   │   ├── project_service.py     # Project CRUD operations
+│   │   ├── analytics_service.py   # Analytics computations (dim reduction, similarity)
+│   │   └── file_storage.py        # File management
 │   ├── crud/            # Database CRUD operations
 │   └── storage/         # Data storage (SQLite, ChromaDB, uploads)
 ├── frontend/            # Next.js frontend
@@ -215,15 +223,23 @@ daa-chatbot/
 │       │   ├── layout.tsx         # Root layout
 │       │   ├── chat/              # Chat pages
 │       │   ├── projects/          # Project management
-│       │   └── documents/         # Document management
+│       │   ├── documents/         # Document management
+│       │   └── analytics/         # Embedding analytics dashboard
 │       ├── components/  # React components
 │       │   ├── ui/                # shadcn/ui components
 │       │   ├── chat/              # Chat interface components
 │       │   ├── documents/         # Document upload components
-│       │   └── projects/          # Project components
+│       │   ├── projects/          # Project components
+│       │   └── analytics/         # Analytics visualizations
+│       │       ├── EmbeddingVisualization.tsx  # 2D/3D scatter plots
+│       │       ├── SimilarityHeatmap.tsx       # Similarity matrix heatmap
+│       │       ├── EmbeddingTable.tsx          # Data table with search
+│       │       └── RetrievalTester.tsx         # Query testing interface
 │       ├── lib/         # Utilities and API clients
+│       │   └── analytics-api.ts   # Analytics API client
 │       ├── stores/      # Zustand state management
 │       └── types/       # TypeScript type definitions
+│           └── analytics.ts       # Analytics type definitions
 └── docker-compose.yml   # Docker configuration
 ```
 
