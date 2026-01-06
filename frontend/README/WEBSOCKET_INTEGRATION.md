@@ -1,85 +1,210 @@
-# Frontend WebSocket Integration Guide
+# WebSocket Integration Documentation
+
+This document provides comprehensive documentation for WebSocket integration using Socket.IO in the DAA Chatbot frontend.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Setup and Configuration](#setup-and-configuration)
+- [WebSocket Client](#websocket-client)
+- [React Hooks](#react-hooks)
+- [Event System](#event-system)
+- [UI Components](#ui-components)
+- [Usage Examples](#usage-examples)
+- [Error Handling](#error-handling)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
 
 ## Overview
 
-The DAA Chatbot frontend now has complete WebSocket support for real-time chat streaming, document processing updates, and project notifications using Socket.IO client.
+The DAA Chatbot uses **Socket.IO** for real-time bidirectional communication between the frontend and backend, enabling:
 
-## Files Created/Updated
+- **Real-time Chat Streaming**: Token-by-token message generation
+- **Document Processing Updates**: Live status and progress updates
+- **Project Notifications**: Multi-user project activity updates
+- **Auto-Reconnection**: Automatic reconnection with exponential backoff
 
-### Core WebSocket Client
-- **`src/lib/websocket.ts`** - Main WebSocket client with Socket.IO integration
-  - WebSocketClient class with connection management
-  - Auto-reconnection logic
-  - Event handling system
-  - React hooks for easy integration
+**Technology Stack:**
+- **Socket.IO Client** (4.8+): WebSocket library
+- **React Hooks**: Custom hooks for easy integration
+- **TypeScript**: Full type safety for events
 
-### UI Components
-- **`src/components/chat/ConnectionStatus.tsx`** - Connection status indicator
-- **`src/components/chat/TypingIndicator.tsx`** - Typing and streaming indicators
-- **`src/components/chat/StreamingChatExample.tsx`** - Complete example implementation
+## Setup and Configuration
 
-## Quick Start
+### Environment Variables
 
-### 1. Basic Connection
+**File:** `.env.local`
 
+```bash
+# Backend API URL (WebSocket uses same origin)
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+The WebSocket client automatically connects to `http://localhost:8000/socket.io`.
+
+### WebSocket Client File
+
+**File:** `src/lib/websocket.ts`
+
+Features:
+- Singleton pattern for global connection
+- Auto-reconnection with exponential backoff
+- Project room management
+- Type-safe event handlers
+- React hooks for integration
+
+## WebSocket Client
+
+### Connection Management
+
+**Direct Client Usage:**
+
+```typescript
+import wsClient from '@/lib/websocket';
+
+// Connect
+await wsClient.connect({ token: 'optional-jwt-token' });
+
+// Check connection status
+const isConnected = wsClient.isConnected();
+const status = wsClient.getStatus(); // 'connected' | 'disconnected' | 'connecting' | 'reconnecting' | 'error'
+
+// Disconnect
+wsClient.disconnect();
+```
+
+### Auto-Reconnection
+
+The client automatically handles reconnections:
+
+- **Max Attempts**: 5
+- **Initial Delay**: 1 second
+- **Max Delay**: 5 seconds (exponential backoff)
+- **Auto-Rejoin**: Automatically rejoins project rooms after reconnecting
+
+**Monitoring Reconnection:**
+
+```typescript
+wsClient.onStatusChange((status) => {
+  if (status === 'reconnecting') {
+    console.log('Reconnecting...');
+  }
+  if (status === 'connected') {
+    console.log('Reconnected!');
+  }
+});
+```
+
+### Project Rooms
+
+WebSocket rooms isolate events by project:
+
+```typescript
+// Join a project room
+wsClient.joinProject(projectId);
+
+// Leave a project room
+wsClient.leaveProject(projectId);
+```
+
+Events are only received for the current project room.
+
+## React Hooks
+
+### useWebSocketConnection
+
+Manages WebSocket connection state.
+
+**Signature:**
+```typescript
+const {
+  status,        // ConnectionStatus
+  isConnected,   // boolean
+  connect,       // () => Promise<void>
+  disconnect     // () => void
+} = useWebSocketConnection({
+  autoConnect?: boolean,      // Default: true
+  auth?: { token?: string }
+});
+```
+
+**Usage:**
 ```typescript
 import { useWebSocketConnection } from '@/lib/websocket';
 
 function MyComponent() {
-  const { status, isConnected, connect, disconnect } = useWebSocketConnection({
-    autoConnect: true,
-    auth: { token: 'optional-jwt-token' }
+  const { status, isConnected } = useWebSocketConnection({
+    autoConnect: true
   });
 
   return (
     <div>
       Status: {status}
-      {isConnected && <p>Connected!</p>}
+      {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
     </div>
   );
 }
 ```
 
-### 2. Project Room Management
+### useProjectRoom
 
+Automatically manages project room join/leave.
+
+**Signature:**
+```typescript
+useProjectRoom(projectId: number | null);
+```
+
+**Usage:**
 ```typescript
 import { useProjectRoom } from '@/lib/websocket';
 
 function ProjectChat({ projectId }: { projectId: number }) {
-  // Automatically joins/leaves project room
+  // Automatically joins on mount, leaves on unmount
   useProjectRoom(projectId);
 
-  return <div>Joined project {projectId}</div>;
+  return <div>Project {projectId} Chat</div>;
 }
 ```
 
-### 3. Streaming Chat Messages
+**Behavior:**
+- Joins room when `projectId` is provided and connected
+- Leaves room when component unmounts or `projectId` changes
+- No-op if `projectId` is `null` or not connected
 
+### useChatStream
+
+Handles real-time chat message streaming.
+
+**Signature:**
+```typescript
+const { sendMessage } = useChatStream(chatId: number, {
+  onToken?: (token: string) => void,
+  onSources?: (sources: SourceDocument[]) => void,
+  onComplete?: (metadata: MessageMetadata) => void,
+  onError?: (error: string) => void
+});
+```
+
+**Usage:**
 ```typescript
 import { useChatStream } from '@/lib/websocket';
 
-function ChatComponent({ chatId }: { chatId: number }) {
+function ChatInterface({ chatId }: { chatId: number }) {
   const [streamingText, setStreamingText] = useState('');
-  const [sources, setSources] = useState([]);
 
   const { sendMessage } = useChatStream(chatId, {
-    onToken: (token) => {
-      setStreamingText(prev => prev + token);
-    },
-    onSources: (sources) => {
-      setSources(sources);
-    },
+    onToken: (token) => setStreamingText(prev => prev + token),
+    onSources: (sources) => console.log('Sources:', sources),
     onComplete: (metadata) => {
-      console.log('Stream complete:', metadata);
-      // Save message to state
+      console.log('Complete:', metadata);
+      setStreamingText('');
     },
-    onError: (error) => {
-      console.error('Stream error:', error);
-    }
+    onError: (error) => toast.error(error)
   });
 
   const handleSend = () => {
-    sendMessage('What is this document about?', {
+    sendMessage('What is machine learning?', {
       temperature: 0.7,
       include_history: true
     });
@@ -94,88 +219,129 @@ function ChatComponent({ chatId }: { chatId: number }) {
 }
 ```
 
-## React Hooks API
-
-### useWebSocketConnection
-
-Manages WebSocket connection state.
-
-```typescript
-const {
-  status,        // 'connected' | 'disconnected' | 'connecting' | 'reconnecting' | 'error'
-  isConnected,   // boolean
-  connect,       // () => Promise<void>
-  disconnect     // () => void
-} = useWebSocketConnection({
-  autoConnect?: boolean,  // Default: true
-  auth?: { token?: string }
-});
-```
-
-### useProjectRoom
-
-Automatically joins/leaves a project room.
-
-```typescript
-useProjectRoom(projectId: number | null);
-```
-
-- Joins the project room when `projectId` is provided and connected
-- Leaves the room when component unmounts or `projectId` changes
-- Does nothing if `projectId` is `null` or not connected
-
-### useChatStream
-
-Handles real-time chat message streaming.
-
-```typescript
-const { sendMessage } = useChatStream(chatId: number, {
-  onToken?: (token: string) => void,
-  onSources?: (sources: SourceDocument[]) => void,
-  onComplete?: (metadata: { model: string; sources_count: number }) => void,
-  onError?: (error: string) => void
-});
-
-// Send a message
-sendMessage(message: string, options?: {
-  model?: string,
-  temperature?: number,
-  include_history?: boolean
-});
-```
-
 ### useDocumentUpdates
 
 Listen to document processing status updates.
 
+**Signature:**
 ```typescript
-useDocumentUpdates((data) => {
-  console.log('Document status:', data);
-  // data: { document_id: number, status: 'processing' | 'completed' | 'failed', progress?: number }
-});
+useDocumentUpdates((data: DocumentStatusEvent) => void);
+```
+
+**Usage:**
+```typescript
+import { useDocumentUpdates } from '@/lib/websocket';
+
+function DocumentList() {
+  useDocumentUpdates((data) => {
+    console.log('Document update:', data);
+    // { document_id: number, status: 'processing' | 'completed' | 'failed', progress?: number }
+
+    // Invalidate queries to refetch
+    queryClient.invalidateQueries(['documents']);
+  });
+
+  return <div>Documents</div>;
+}
 ```
 
 ### useProjectUpdates
 
-Listen to project-level updates.
+Listen to project-level notifications.
+
+**Signature:**
+```typescript
+useProjectUpdates((data: ProjectUpdateEvent) => void);
+```
+
+**Usage:**
+```typescript
+import { useProjectUpdates } from '@/lib/websocket';
+
+function ProjectDashboard() {
+  useProjectUpdates((data) => {
+    console.log('Project update:', data);
+    // { type: string, data: Record<string, any> }
+  });
+
+  return <div>Dashboard</div>;
+}
+```
+
+## Event System
+
+### Available Events
+
+**Client → Server:**
+- `send_message`: Send a chat message
+- `join_project`: Join a project room
+- `leave_project`: Leave a project room
+
+**Server → Client:**
+- `message_token`: Streaming message token
+- `message_sources`: Retrieved source documents
+- `message_complete`: Message generation complete
+- `document_status`: Document processing update
+- `project_update`: Project notification
+- `error`: Error message
+
+### Event Handlers
+
+Direct event subscription (lower-level API):
 
 ```typescript
-useProjectUpdates((data) => {
-  console.log('Project update:', data);
-  // data: { type: string, data: Record<string, any> }
+import wsClient from '@/lib/websocket';
+
+// Message streaming
+const unsubToken = wsClient.onMessageToken((data) => {
+  console.log('Token:', data.token);
 });
+
+const unsubSources = wsClient.onMessageSources((data) => {
+  console.log('Sources:', data.sources);
+});
+
+const unsubComplete = wsClient.onMessageComplete((data) => {
+  console.log('Complete:', data.metadata);
+});
+
+// Document updates
+const unsubDoc = wsClient.onDocumentStatus((data) => {
+  console.log('Document:', data);
+});
+
+// Project updates
+const unsubProj = wsClient.onProjectUpdate((data) => {
+  console.log('Project:', data);
+});
+
+// Errors
+const unsubError = wsClient.onError((data) => {
+  console.error('Error:', data.message);
+});
+
+// Cleanup
+unsubToken();
+unsubSources();
+unsubComplete();
+unsubDoc();
+unsubProj();
+unsubError();
 ```
 
 ## UI Components
 
 ### ConnectionStatus
 
-Shows the current WebSocket connection status.
+Shows current WebSocket connection status.
 
-```typescript
+**File:** `src/components/chat/ConnectionStatus.tsx`
+
+**Usage:**
+```tsx
 import { ConnectionStatus, ConnectionStatusDot } from '@/components/chat/ConnectionStatus';
 
-// Full status with icon and label
+// Full status with label
 <ConnectionStatus showLabel={true} />
 
 // Just a colored dot
@@ -183,17 +349,20 @@ import { ConnectionStatus, ConnectionStatusDot } from '@/components/chat/Connect
 ```
 
 **States:**
-- 🟢 **Connected** - Green
-- 🔴 **Disconnected** - Gray
-- 🔵 **Connecting** - Blue (animated)
-- 🟡 **Reconnecting** - Yellow (animated)
-- 🔴 **Error** - Red
+- 🟢 **Connected**: Green
+- 🔴 **Disconnected**: Gray
+- 🔵 **Connecting**: Blue (animated)
+- 🟡 **Reconnecting**: Yellow (animated)
+- 🔴 **Error**: Red
 
 ### TypingIndicator
 
-Shows when the AI is processing.
+Shows when AI is processing or streaming.
 
-```typescript
+**File:** `src/components/chat/TypingIndicator.tsx`
+
+**Usage:**
+```tsx
 import { TypingIndicator, StreamingIndicator } from '@/components/chat/TypingIndicator';
 
 // Bouncing dots
@@ -203,92 +372,75 @@ import { TypingIndicator, StreamingIndicator } from '@/components/chat/TypingInd
 <StreamingIndicator content={streamingText} />
 ```
 
-### StreamingChatExample
+## Usage Examples
 
-Complete working example of a streaming chat interface.
+### Basic Chat Integration
 
 ```typescript
-import { StreamingChatExample } from '@/components/chat/StreamingChatExample';
+'use client';
 
-<StreamingChatExample chatId={1} projectId={1} />
+import { useState } from 'react';
+import { useWebSocketConnection, useChatStream, useProjectRoom } from '@/lib/websocket';
+
+export default function ChatPage({ chatId, projectId }: { chatId: number; projectId: number }) {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [streaming, setStreaming] = useState('');
+
+  const { isConnected } = useWebSocketConnection({ autoConnect: true });
+  useProjectRoom(projectId);
+
+  const { sendMessage } = useChatStream(chatId, {
+    onToken: (token) => setStreaming(prev => prev + token),
+    onComplete: () => {
+      setMessages(prev => [...prev, { role: 'assistant', content: streaming }]);
+      setStreaming('');
+    }
+  });
+
+  const handleSend = () => {
+    if (!input.trim() || !isConnected) return;
+    setMessages(prev => [...prev, { role: 'user', content: input }]);
+    sendMessage(input);
+    setInput('');
+  };
+
+  return (
+    <div>
+      {messages.map((msg, i) => (
+        <div key={i}>{msg.content}</div>
+      ))}
+      {streaming && <div>{streaming}</div>}
+      <input value={input} onChange={(e) => setInput(e.target.value)} />
+      <button onClick={handleSend} disabled={!isConnected}>Send</button>
+    </div>
+  );
+}
 ```
 
-## Direct WebSocket Client API
-
-For advanced use cases, you can use the WebSocket client directly:
+### Document Processing Monitor
 
 ```typescript
-import wsClient from '@/lib/websocket';
+import { useDocumentUpdates } from '@/lib/websocket';
+import { useQueryClient } from '@tanstack/react-query';
 
-// Connect
-await wsClient.connect({ token: 'jwt-token' });
+function DocumentMonitor() {
+  const queryClient = useQueryClient();
 
-// Join project
-wsClient.joinProject(projectId);
+  useDocumentUpdates((update) => {
+    if (update.status === 'completed' || update.status === 'failed') {
+      // Refetch documents when processing completes
+      queryClient.invalidateQueries(['documents']);
+    }
 
-// Send message
-wsClient.sendMessage({
-  chat_id: 1,
-  message: 'Hello',
-  model: 'llama3.2',
-  temperature: 0.7
-});
+    // Show progress notification
+    if (update.progress !== undefined) {
+      console.log(`Document ${update.document_id}: ${update.progress}%`);
+    }
+  });
 
-// Listen to events
-const unsubscribe = wsClient.onMessageToken((data) => {
-  console.log('Token:', data.token);
-});
-
-// Clean up
-unsubscribe();
-wsClient.disconnect();
-```
-
-## Event Handlers
-
-Available event handler methods:
-
-```typescript
-// Connection status changes
-wsClient.onStatusChange((status) => console.log(status));
-
-// Message streaming
-wsClient.onMessageToken((data) => console.log(data.token));
-wsClient.onMessageSources((data) => console.log(data.sources));
-wsClient.onMessageComplete((data) => console.log(data.metadata));
-
-// Project updates
-wsClient.onDocumentStatus((data) => console.log(data));
-wsClient.onProjectUpdate((data) => console.log(data));
-
-// Errors
-wsClient.onError((data) => console.error(data.message));
-```
-
-All handlers return an unsubscribe function:
-```typescript
-const unsubscribe = wsClient.onMessageToken(handler);
-unsubscribe(); // Stop listening
-```
-
-## Auto-Reconnection
-
-The WebSocket client automatically handles reconnections:
-
-- **Max Attempts:** 5
-- **Reconnect Delay:** 1 second (increases up to 5 seconds)
-- **Auto-Rejoin:** Automatically rejoins project rooms after reconnecting
-
-Reconnection events:
-```typescript
-wsClient.onStatusChange((status) => {
-  if (status === 'reconnecting') {
-    console.log('Attempting to reconnect...');
-  }
-  if (status === 'connected') {
-    console.log('Reconnected successfully!');
-  }
-});
+  return null; // This is a listener component
+}
 ```
 
 ## Error Handling
@@ -299,8 +451,14 @@ wsClient.onStatusChange((status) => {
 const { status } = useWebSocketConnection();
 
 if (status === 'error') {
-  // Show error UI
-  return <div>Connection failed. Please refresh.</div>;
+  return (
+    <Alert variant="destructive">
+      <AlertTitle>Connection Error</AlertTitle>
+      <AlertDescription>
+        Unable to connect to server. Please refresh the page.
+      </AlertDescription>
+    </Alert>
+  );
 }
 ```
 
@@ -310,7 +468,7 @@ if (status === 'error') {
 useChatStream(chatId, {
   onError: (error) => {
     toast({
-      title: 'Message failed',
+      title: 'Message Failed',
       description: error,
       variant: 'destructive'
     });
@@ -318,18 +476,148 @@ useChatStream(chatId, {
 });
 ```
 
-## Environment Variables
+### Graceful Degradation
 
-Configure the WebSocket URL in `.env.local`:
+```typescript
+function ChatComponent() {
+  const { isConnected } = useWebSocketConnection();
 
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
+  if (!isConnected) {
+    return (
+      <div>
+        <p>Connecting to server...</p>
+        <Button onClick={() => window.location.reload()}>
+          Reload
+        </Button>
+      </div>
+    );
+  }
+
+  return <ChatInterface />;
+}
 ```
 
-The WebSocket client will automatically connect to:
+## Best Practices
+
+### 1. Use Hooks Over Direct API
+
+```typescript
+// ✅ Good: Use hooks
+const { isConnected } = useWebSocketConnection({ autoConnect: true });
+
+// ❌ Bad: Manual connection management
+useEffect(() => {
+  wsClient.connect();
+  return () => wsClient.disconnect();
+}, []);
 ```
-http://localhost:8000/socket.io
+
+### 2. Auto-Join Project Rooms
+
+```typescript
+// ✅ Good: Use the hook
+useProjectRoom(currentProjectId);
+
+// ❌ Bad: Manual join/leave
+useEffect(() => {
+  wsClient.joinProject(projectId);
+  return () => wsClient.leaveProject(projectId);
+}, [projectId]);
 ```
+
+### 3. Cleanup Event Listeners
+
+```typescript
+// ✅ Good: Hooks handle cleanup automatically
+useChatStream(chatId, { onToken: handleToken });
+
+// ⚠️ If using direct API, remember to cleanup
+useEffect(() => {
+  const unsubscribe = wsClient.onMessageToken(handleToken);
+  return unsubscribe; // Important!
+}, []);
+```
+
+### 4. Handle Loading States
+
+```typescript
+const [isWaiting, setIsWaiting] = useState(false);
+
+const handleSend = () => {
+  setIsWaiting(true);
+  sendMessage(input);
+};
+
+useChatStream(chatId, {
+  onToken: () => setIsWaiting(false),
+  onComplete: () => setIsWaiting(false),
+  onError: () => setIsWaiting(false)
+});
+```
+
+### 5. Optimistic Updates
+
+```typescript
+const handleSend = (message: string) => {
+  // Add message optimistically
+  setMessages(prev => [...prev, { role: 'user', content: message }]);
+
+  sendMessage(message);
+};
+
+useChatStream(chatId, {
+  onError: (error) => {
+    // Rollback on error
+    setMessages(prev => prev.slice(0, -1));
+    toast.error(error);
+  }
+});
+```
+
+## Troubleshooting
+
+### Connection Issues
+
+**Problem:** WebSocket not connecting
+
+**Solutions:**
+1. Verify backend is running:
+   ```bash
+   curl http://localhost:8000/api/health
+   ```
+2. Check `NEXT_PUBLIC_API_URL` in `.env.local`
+3. Check browser console for errors
+4. Verify CORS configuration on backend
+
+### Messages Not Streaming
+
+**Problem:** Not receiving message tokens
+
+**Solutions:**
+1. Verify you're in the correct project room
+2. Check `chat_id` matches the active chat
+3. Check browser Network tab for WebSocket connection
+4. Verify backend WebSocket handlers are running
+
+### Auto-Reconnect Not Working
+
+**Problem:** Doesn't reconnect after disconnect
+
+**Solutions:**
+1. Check if max reconnect attempts (5) exceeded
+2. Manually refresh the page
+3. Check browser console for `reconnect_failed` event
+4. Verify backend accessibility
+
+### Room Not Joined
+
+**Problem:** Not receiving project-specific events
+
+**Solutions:**
+1. Ensure `useProjectRoom()` is called
+2. Check connection status before joining
+3. Verify `projectId` is correct
+4. Check browser console for `joined_project` confirmation
 
 ## TypeScript Types
 
@@ -342,7 +630,7 @@ export type ConnectionStatus =
   | 'reconnecting'
   | 'error';
 
-// Source document from RAG retrieval
+// Source document
 export interface SourceDocument {
   id: string;
   content: string;
@@ -350,7 +638,7 @@ export interface SourceDocument {
   score: number;
 }
 
-// Event payloads
+// Event types
 export interface MessageTokenEvent {
   chat_id: number;
   token: string;
@@ -386,225 +674,8 @@ export interface ErrorEvent {
 }
 ```
 
-## Best Practices
+## Additional Resources
 
-### 1. Connection Management
-
-```typescript
-// ✅ Good: Use the hook
-const { isConnected } = useWebSocketConnection({ autoConnect: true });
-
-// ❌ Avoid: Manual connection management
-useEffect(() => {
-  wsClient.connect();
-  return () => wsClient.disconnect();
-}, []);
-```
-
-### 2. Project Rooms
-
-```typescript
-// ✅ Good: Use the hook
-useProjectRoom(currentProjectId);
-
-// ❌ Avoid: Manual join/leave
-useEffect(() => {
-  wsClient.joinProject(projectId);
-  return () => wsClient.leaveProject(projectId);
-}, [projectId]);
-```
-
-### 3. Event Cleanup
-
-```typescript
-// ✅ Good: Hooks handle cleanup automatically
-useChatStream(chatId, { onToken: handleToken });
-
-// ⚠️ If using direct API, clean up manually
-useEffect(() => {
-  const unsubscribe = wsClient.onMessageToken(handleToken);
-  return unsubscribe;
-}, []);
-```
-
-### 4. Loading States
-
-```typescript
-const [isWaiting, setIsWaiting] = useState(false);
-
-const handleSend = () => {
-  setIsWaiting(true);
-  sendMessage(input);
-};
-
-useChatStream(chatId, {
-  onToken: () => setIsWaiting(false),
-  onComplete: () => setIsWaiting(false),
-  onError: () => setIsWaiting(false)
-});
-```
-
-## Complete Example: Chat Page
-
-```typescript
-'use client';
-
-import { useState } from 'react';
-import {
-  useWebSocketConnection,
-  useChatStream,
-  useProjectRoom
-} from '@/lib/websocket';
-import { ConnectionStatus } from '@/components/chat/ConnectionStatus';
-import { TypingIndicator } from '@/components/chat/TypingIndicator';
-
-export default function ChatPage({
-  params
-}: {
-  params: { projectId: string; chatId: string }
-}) {
-  const projectId = parseInt(params.projectId);
-  const chatId = parseInt(params.chatId);
-
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Array<{
-    role: 'user' | 'assistant';
-    content: string;
-  }>>([]);
-  const [streaming, setStreaming] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Connect to WebSocket
-  const { isConnected } = useWebSocketConnection({ autoConnect: true });
-
-  // Join project room
-  useProjectRoom(projectId);
-
-  // Set up chat streaming
-  const { sendMessage } = useChatStream(chatId, {
-    onToken: (token) => setStreaming(prev => prev + token),
-    onComplete: (metadata) => {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: streaming
-      }]);
-      setStreaming('');
-      setIsLoading(false);
-    },
-    onError: (error) => {
-      console.error(error);
-      setIsLoading(false);
-    }
-  });
-
-  const handleSend = () => {
-    if (!input.trim() || !isConnected) return;
-
-    setMessages(prev => [...prev, { role: 'user', content: input }]);
-    setIsLoading(true);
-    sendMessage(input);
-    setInput('');
-  };
-
-  return (
-    <div className="flex flex-col h-screen">
-      <header className="p-4 border-b flex justify-between">
-        <h1>Chat</h1>
-        <ConnectionStatus />
-      </header>
-
-      <main className="flex-1 overflow-y-auto p-4">
-        {messages.map((msg, i) => (
-          <div key={i} className={msg.role}>
-            {msg.content}
-          </div>
-        ))}
-        {streaming && <div className="assistant">{streaming}</div>}
-        {isLoading && !streaming && <TypingIndicator />}
-      </main>
-
-      <footer className="p-4 border-t">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          disabled={!isConnected}
-        />
-        <button onClick={handleSend} disabled={!isConnected}>
-          Send
-        </button>
-      </footer>
-    </div>
-  );
-}
-```
-
-## Debugging
-
-### Enable Verbose Logging
-
-All WebSocket events are logged to the console with `[WebSocket]` prefix:
-
-```
-[WebSocket] Connected: abc123
-[WebSocket] Joined project: 1
-[WebSocket] Sending message: {...}
-[WebSocket] Message sources: {...}
-[WebSocket] Message token received
-[WebSocket] Message complete: {...}
-```
-
-### Check Connection Status
-
-```typescript
-import wsClient from '@/lib/websocket';
-
-console.log('Status:', wsClient.getStatus());
-console.log('Connected:', wsClient.isConnected());
-```
-
-### Test Ping/Pong
-
-```typescript
-wsClient.ping(); // Check console for latency
-```
-
-## Troubleshooting
-
-### Connection Issues
-
-**Problem:** WebSocket not connecting
-
-**Solutions:**
-1. Check backend is running: `curl http://localhost:8000/health`
-2. Verify `NEXT_PUBLIC_API_URL` in `.env.local`
-3. Check browser console for errors
-4. Ensure CORS is configured on backend
-
-### Messages Not Streaming
-
-**Problem:** Not receiving message tokens
-
-**Solutions:**
-1. Verify you're in the correct project room
-2. Check chat_id matches the active chat
-3. Ensure backend WebSocket handlers are working
-4. Check browser console for WebSocket events
-
-### Auto-Reconnect Not Working
-
-**Problem:** Doesn't reconnect after disconnect
-
-**Solutions:**
-1. Check if max reconnect attempts (5) exceeded
-2. Verify backend is accessible
-3. Look for `reconnect_failed` event in console
-4. Manually call `connect()` if needed
-
-## Next Steps
-
-- Implement persistent message storage
-- Add optimistic UI updates
-- Integrate with existing chat components
-- Add notification system for document updates
-- Implement typing indicators for multiple users
+- [Socket.IO Client Documentation](https://socket.io/docs/v4/client-api/)
+- [React Hooks Patterns](https://react.dev/reference/react)
+- [WebSocket Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)

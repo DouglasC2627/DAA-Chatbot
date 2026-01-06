@@ -1,23 +1,72 @@
-# Live Updates Implementation Guide
+# Live Updates Guide
+
+This document provides comprehensive documentation for implementing real-time updates in the DAA Chatbot frontend, including document processing status, notifications, and connection management.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Components Overview](#components-overview)
+- [Document Processing Status](#document-processing-status)
+- [Notification Center](#notification-center)
+- [Real-time Chat Synchronization](#real-time-chat-synchronization)
+- [WebSocket Provider & Connection Management](#websocket-provider--connection-management)
+- [Application Layout Integration](#application-layout-integration)
+- [Integration Patterns](#integration-patterns)
+- [Event Flow](#event-flow)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
+- [TypeScript API Reference](#typescript-api-reference)
 
 ## Overview
 
-Task 8.3 adds comprehensive real-time features to the DAA Chatbot, including live document processing status, notifications, progress tracking, and offline/online handling.
+The DAA Chatbot provides a comprehensive suite of real-time update features built on top of the WebSocket infrastructure:
 
-## Features Implemented
+- **Document Processing Status**: Live progress tracking for document uploads and processing
+- **Notification Center**: Centralized system for user notifications with history
+- **Real-time Chat Sync**: Automatic synchronization of chat data across the application
+- **Connection Management**: Offline/online detection and auto-reconnection
+- **Application Layout**: Pre-built layout with all real-time features integrated
 
-### 1. Live Document Processing Status
+**Technology Stack:**
+- **WebSocket Layer**: Socket.IO client with auto-reconnection
+- **State Management**: React Query for cache invalidation, Zustand for notification state
+- **UI Components**: shadcn/ui with real-time updates
+- **Offline Detection**: Browser online/offline events with visual feedback
 
-Real-time updates for document processing with progress tracking.
+## Components Overview
 
-**Components:**
-- `DocumentProcessingStatus` - Full status cards with progress bars
-- `DocumentStatusBadge` - Compact inline badge for individual documents
+### Real-time Components
+
+| Component | Purpose | Location |
+|-----------|---------|----------|
+| `DocumentProcessingStatus` | Track document processing progress | `components/documents/` |
+| `DocumentStatusBadge` | Inline status badge for documents | `components/documents/` |
+| `NotificationCenter` | Centralized notification management | `components/notifications/` |
+| `RealtimeChatUpdates` | Auto-sync chat data | `components/chat/` |
+| `WebSocketProvider` | Connection state and offline handling | `components/providers/` |
+| `AppLayout` | Complete layout with all features | `components/layout/` |
+
+### Custom Hooks
+
+| Hook | Purpose | Returns |
+|------|---------|---------|
+| `useNotifications()` | Programmatic notifications | `{ success, error, info }` |
+| `useRealtimeChatSync()` | Auto-sync chat queries | `void` |
+| `useWebSocket()` | Connection state | `{ status, isConnected, connect, disconnect }` |
+| `useOnlineStatus()` | Browser online/offline | `boolean` |
+
+## Document Processing Status
+
+Real-time tracking of document upload and processing with visual progress indicators.
+
+### DocumentProcessingStatus Component
+
+**File:** `src/components/documents/DocumentProcessingStatus.tsx`
 
 **Usage:**
 
 ```typescript
-import { DocumentProcessingStatus, DocumentStatusBadge } from '@/components/documents/DocumentProcessingStatus';
+import { DocumentProcessingStatus } from '@/components/documents/DocumentProcessingStatus';
 
 // Show all processing documents
 <DocumentProcessingStatus
@@ -25,201 +74,185 @@ import { DocumentProcessingStatus, DocumentStatusBadge } from '@/components/docu
   onError={(docId, error) => console.error('Document failed:', docId, error)}
 />
 
-// Show status for a specific document
+// Filter to specific document
 <DocumentProcessingStatus documentId={123} />
-
-// Inline badge in document list
-<DocumentStatusBadge documentId={123} showProgress={true} />
 ```
 
-**Features:**
-- ✅ Real-time progress updates (0-100%)
-- ✅ Status indicators (Processing, Completed, Failed)
-- ✅ Auto-removal of completed documents after 3 seconds
-- ✅ Progress bars with percentage
-- ✅ Callback support for completion and errors
-
-### 2. Notification Center
-
-Centralized notification system with toast integration.
-
-**Component:** `NotificationCenter`
-
-**Usage:**
-
-```typescript
-import { NotificationCenter, useNotifications } from '@/components/notifications/NotificationCenter';
-
-// Add to header/layout
-<NotificationCenter />
-
-// Use programmatically
-const notify = useNotifications();
-
-notify.success('Document Processed', 'Your document is ready');
-notify.error('Processing Failed', 'Please try again');
-notify.info('New Update', 'A new document was added');
-```
-
-**Features:**
-- ✅ Bell icon with unread count badge
-- ✅ Dropdown with notification history
-- ✅ Real-time notifications for:
-  - Document processing completion
-  - Document processing failures
-  - Documents added/removed from project
-  - Custom project updates
-- ✅ Mark as read/Mark all as read
-- ✅ Clear all notifications
-- ✅ Time ago formatting
-- ✅ Toast integration for important notifications
-- ✅ Categorized by type (document, project, system)
-
-### 3. Real-time Chat Updates
-
-Automatic UI synchronization when chat data changes.
-
-**Component:** `RealtimeChatUpdates`
-
-**Usage:**
-
-```typescript
-import { RealtimeChatUpdates, useRealtimeChatSync } from '@/components/chat/RealtimeChatUpdates';
-
-// As a component (automatically invalidates React Query caches)
-<RealtimeChatUpdates
-  projectId={projectId}
-  onNewMessage={(chatId) => console.log('New message in chat:', chatId)}
-  onChatUpdated={(chatId) => console.log('Chat updated:', chatId)}
-  onChatDeleted={(chatId) => console.log('Chat deleted:', chatId)}
-/>
-
-// As a hook
-function ChatPage({ projectId, chatId }) {
-  useRealtimeChatSync(projectId, chatId);
-  // Chat messages will auto-refresh when new messages arrive
-}
-```
-
-**Features:**
-- ✅ Automatically invalidates React Query caches
-- ✅ Syncs on:
-  - New messages added
-  - Chats created/updated/deleted
-  - Documents added/removed
-- ✅ Callback support for custom actions
-- ✅ No polling required
-
-### 4. WebSocket Provider & Offline Handling
-
-Complete connection management with offline/online detection.
-
-**Component:** `WebSocketProvider`
-
-**Usage:**
-
-```typescript
-import { WebSocketProvider, useWebSocket, OfflineGuard, useOnlineStatus } from '@/components/providers/WebSocketProvider';
-
-// Wrap your app
-<WebSocketProvider showOfflineAlert={true} autoConnect={true}>
-  <App />
-</WebSocketProvider>
-
-// Use in components
-function MyComponent() {
-  const { status, isConnected, connect, disconnect } = useWebSocket();
-
-  return <div>Status: {status}</div>;
-}
-
-// Guard features that require connection
-<OfflineGuard fallback={<div>This feature requires internet</div>}>
-  <ChatFeature />
-</OfflineGuard>
-
-// Check online status
-const isOnline = useOnlineStatus();
-```
-
-**Features:**
-- ✅ Auto-detection of browser online/offline status
-- ✅ Banner notifications for:
-  - Offline mode
-  - WebSocket disconnected
-  - Connection restored (temporary, auto-hides after 3s)
-- ✅ Manual reconnect button when disconnected
-- ✅ Auto-reconnect when coming back online
-- ✅ OfflineGuard component for conditional rendering
-- ✅ Context API for connection state sharing
-
-### 5. Application Layout Integration
-
-Complete layout with all real-time features integrated.
-
-**Component:** `AppLayout`
-
-**Usage:**
-
-```typescript
-import { AppLayout } from '@/components/layout/AppLayout';
-
-export default function RootLayout({ children }) {
-  return (
-    <html>
-      <body>
-        <AppLayout>
-          {children}
-        </AppLayout>
-      </body>
-    </html>
-  );
-}
-```
-
-**Features:**
-- ✅ WebSocket provider wrapping entire app
-- ✅ Connection status indicator in header
-- ✅ Notification center in header
-- ✅ Conditional rendering on auth pages
-- ✅ Responsive header and footer
-
-## Component API Reference
-
-### DocumentProcessingStatus
+**Props:**
 
 ```typescript
 interface DocumentProcessingStatusProps {
-  documentId?: number;           // Filter to specific document
+  documentId?: number;  // Filter to specific document ID
   onComplete?: (documentId: number) => void;
   onError?: (documentId: number, error: string) => void;
 }
 ```
 
-### DocumentStatusBadge
+**Features:**
+- Real-time progress updates (0-100%)
+- Visual progress bars with percentage
+- Status indicators: Processing (blue), Completed (green), Failed (red)
+- Auto-removal of completed documents after 3 seconds
+- Callback support for completion and error events
+
+### DocumentStatusBadge Component
+
+Compact inline status indicator for individual documents.
+
+**Usage:**
+
+```typescript
+import { DocumentStatusBadge } from '@/components/documents/DocumentProcessingStatus';
+
+// In a document list
+<div className="flex items-center gap-2">
+  <span>{document.name}</span>
+  <DocumentStatusBadge documentId={document.id} showProgress={true} />
+</div>
+```
+
+**Props:**
 
 ```typescript
 interface DocumentStatusBadgeProps {
-  documentId: number;            // Document to show status for
-  showProgress?: boolean;        // Show progress percentage (default: false)
+  documentId: number;     // Document to show status for
+  showProgress?: boolean; // Show progress percentage (default: false)
 }
 ```
 
-### NotificationCenter
-
-No props. Add to layout/header.
-
-### useNotifications Hook
+### Document Processing Example
 
 ```typescript
-const notify = useNotifications();
+'use client';
 
-notify.success(title: string, message?: string);
-notify.error(title: string, message?: string);
-notify.info(title: string, message?: string);
+import { useState } from 'react';
+import { DocumentUpload } from '@/components/documents/DocumentUpload';
+import { DocumentProcessingStatus } from '@/components/documents/DocumentProcessingStatus';
+import { useQueryClient } from '@tanstack/react-query';
+
+export default function DocumentsPage({ projectId }: { projectId: number }) {
+  const queryClient = useQueryClient();
+  const [uploadedDocs, setUploadedDocs] = useState<number[]>([]);
+
+  const handleUploadComplete = (docIds: number[]) => {
+    setUploadedDocs(docIds);
+  };
+
+  const handleProcessingComplete = (docId: number) => {
+    // Remove from tracking list
+    setUploadedDocs(prev => prev.filter(id => id !== docId));
+
+    // Refresh documents list
+    queryClient.invalidateQueries(['documents', projectId]);
+  };
+
+  return (
+    <div className="space-y-6">
+      <DocumentUpload
+        projectId={projectId}
+        onUploadComplete={handleUploadComplete}
+      />
+
+      <DocumentProcessingStatus
+        onComplete={handleProcessingComplete}
+        onError={(docId, error) => console.error('Processing failed:', error)}
+      />
+    </div>
+  );
+}
 ```
 
-### RealtimeChatUpdates
+## Notification Center
+
+Centralized notification system with persistent history and toast integration.
+
+**File:** `src/components/notifications/NotificationCenter.tsx`
+
+### Component Usage
+
+```typescript
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+
+// Add to header or layout
+<header>
+  <nav>{/* Navigation items */}</nav>
+  <NotificationCenter />
+</header>
+```
+
+### Programmatic Notifications
+
+```typescript
+import { useNotifications } from '@/components/notifications/NotificationCenter';
+
+function MyComponent() {
+  const notify = useNotifications();
+
+  const handleSuccess = () => {
+    notify.success('Document Processed', 'Your document is ready to use');
+  };
+
+  const handleError = () => {
+    notify.error('Processing Failed', 'Please try uploading again');
+  };
+
+  const handleInfo = () => {
+    notify.info('New Update', 'A new document was added to the project');
+  };
+
+  return (
+    <div>
+      <button onClick={handleSuccess}>Test Success</button>
+      <button onClick={handleError}>Test Error</button>
+      <button onClick={handleInfo}>Test Info</button>
+    </div>
+  );
+}
+```
+
+**Features:**
+- Bell icon with unread count badge
+- Dropdown notification history
+- Automatic notifications for:
+  - Document processing completion/failure
+  - Documents added/removed from project
+  - Custom project updates
+- Mark as read/Mark all as read functionality
+- Clear all notifications
+- Time ago formatting (e.g., "2 minutes ago")
+- Toast integration for important notifications
+- Categorized by type (document, project, system)
+- Dark mode support
+
+## Real-time Chat Synchronization
+
+Automatic React Query cache invalidation when chat data changes via WebSocket events.
+
+**File:** `src/components/chat/RealtimeChatUpdates.tsx`
+
+### Component Usage
+
+```typescript
+import { RealtimeChatUpdates } from '@/components/chat/RealtimeChatUpdates';
+
+function ProjectPage({ projectId }: { projectId: number }) {
+  return (
+    <div>
+      {/* Automatically invalidates caches when chat data changes */}
+      <RealtimeChatUpdates
+        projectId={projectId}
+        onNewMessage={(chatId) => console.log('New message in chat:', chatId)}
+        onChatUpdated={(chatId) => console.log('Chat updated:', chatId)}
+        onChatDeleted={(chatId) => console.log('Chat deleted:', chatId)}
+      />
+
+      <ChatList projectId={projectId} />
+    </div>
+  );
+}
+```
+
+**Props:**
 
 ```typescript
 interface RealtimeChatUpdatesProps {
@@ -230,122 +263,151 @@ interface RealtimeChatUpdatesProps {
 }
 ```
 
-### useRealtimeChatSync Hook
+### Hook Usage
 
 ```typescript
-useRealtimeChatSync(projectId: number, chatId?: number);
+import { useRealtimeChatSync } from '@/components/chat/RealtimeChatUpdates';
+
+function ChatPage({ projectId, chatId }: { projectId: number; chatId: number }) {
+  // Automatically syncs chat data when messages arrive
+  useRealtimeChatSync(projectId, chatId);
+
+  return <ChatInterface chatId={chatId} />;
+}
 ```
 
-### WebSocketProvider
+**Features:**
+- Automatically invalidates React Query caches
+- Triggers on:
+  - New messages added to chats
+  - Chats created/updated/deleted
+  - Documents added/removed affecting context
+- Zero configuration required
+- No polling needed
+- Callback support for custom actions
+
+## WebSocket Provider & Connection Management
+
+Complete connection state management with offline/online detection and visual feedback.
+
+**File:** `src/components/providers/WebSocketProvider.tsx`
+
+### Provider Setup
+
+```typescript
+import { WebSocketProvider } from '@/components/providers/WebSocketProvider';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <WebSocketProvider showOfflineAlert={true} autoConnect={true}>
+          {children}
+        </WebSocketProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+**Props:**
 
 ```typescript
 interface WebSocketProviderProps {
   children: ReactNode;
-  showOfflineAlert?: boolean;    // Show connection banners (default: true)
-  autoConnect?: boolean;         // Auto-connect on mount (default: true)
+  showOfflineAlert?: boolean;  // Show connection banners (default: true)
+  autoConnect?: boolean;       // Auto-connect on mount (default: true)
 }
 ```
 
-### useWebSocket Hook
+### Connection State Hook
 
 ```typescript
-const {
-  status,        // 'connected' | 'disconnected' | 'connecting' | 'reconnecting' | 'error'
-  isConnected,   // boolean
-  connect,       // () => Promise<void>
-  disconnect     // () => void
-} = useWebSocket();
-```
+import { useWebSocket } from '@/components/providers/WebSocketProvider';
 
-### useOnlineStatus Hook
-
-```typescript
-const isOnline = useOnlineStatus();  // boolean
-```
-
-### OfflineGuard Component
-
-```typescript
-<OfflineGuard fallback={<CustomOfflineUI />}>
-  <OnlineOnlyFeature />
-</OfflineGuard>
-```
-
-## Integration Examples
-
-### Example 1: Document Upload with Live Status
-
-```typescript
-'use client';
-
-import { useState } from 'react';
-import { DocumentUpload } from '@/components/documents/DocumentUpload';
-import { DocumentProcessingStatus } from '@/components/documents/DocumentProcessingStatus';
-
-export default function DocumentsPage({ projectId }) {
-  const [uploadedDocs, setUploadedDocs] = useState<number[]>([]);
+function ConnectionIndicator() {
+  const { status, isConnected, connect, disconnect } = useWebSocket();
 
   return (
     <div>
-      <DocumentUpload
-        projectId={projectId}
-        onUploadComplete={(docIds) => setUploadedDocs(docIds)}
-      />
-
-      {/* Show processing status for uploaded documents */}
-      <DocumentProcessingStatus
-        onComplete={(docId) => {
-          // Remove from processing list
-          setUploadedDocs(prev => prev.filter(id => id !== docId));
-          // Refresh documents list
-          queryClient.invalidateQueries(['documents', projectId]);
-        }}
-      />
+      <span>Status: {status}</span>
+      {!isConnected && <button onClick={connect}>Reconnect</button>}
+      {isConnected && <button onClick={disconnect}>Disconnect</button>}
     </div>
   );
 }
 ```
 
-### Example 2: Chat with Real-time Updates
+**Hook Returns:**
 
 ```typescript
-'use client';
+{
+  status: 'connected' | 'disconnected' | 'connecting' | 'reconnecting' | 'error';
+  isConnected: boolean;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+}
+```
 
-import { useChatStream, useProjectRoom } from '@/lib/websocket';
-import { useRealtimeChatSync } from '@/components/chat/RealtimeChatUpdates';
+### Online Status Detection
+
+```typescript
+import { useOnlineStatus } from '@/components/providers/WebSocketProvider';
+
+function OfflineWarning() {
+  const isOnline = useOnlineStatus();
+
+  if (!isOnline) {
+    return <div className="banner">You are offline</div>;
+  }
+
+  return null;
+}
+```
+
+### Offline Guard
+
+Conditionally render features that require internet connection.
+
+```typescript
 import { OfflineGuard } from '@/components/providers/WebSocketProvider';
 
-export default function ChatPage({ projectId, chatId }) {
-  // Join project room for real-time updates
-  useProjectRoom(projectId);
-
-  // Sync chat data automatically
-  useRealtimeChatSync(projectId, chatId);
-
-  // Stream messages
-  const { sendMessage } = useChatStream(chatId, {
-    onToken: (token) => appendToMessage(token),
-    onComplete: () => console.log('Message complete')
-  });
-
+function ChatFeature() {
   return (
-    <OfflineGuard>
-      <ChatInterface onSend={sendMessage} />
+    <OfflineGuard fallback={<div>This feature requires internet connection</div>}>
+      <ChatInterface />
     </OfflineGuard>
   );
 }
 ```
 
-### Example 3: Complete App with All Features
+**Features:**
+- Auto-detection of browser online/offline status
+- Visual banner notifications for:
+  - Offline mode
+  - WebSocket disconnected
+  - Connection restored (auto-hides after 3s)
+- Manual reconnect button when disconnected
+- Auto-reconnect when coming back online
+- Auto-rejoin project rooms after reconnection
+- Context API for connection state sharing
+
+## Application Layout Integration
+
+Pre-built layout component with all real-time features integrated.
+
+**File:** `src/components/layout/AppLayout.tsx`
+
+### Usage
 
 ```typescript
-// app/layout.tsx
 import { AppLayout } from '@/components/layout/AppLayout';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html lang="en">
       <body>
         <QueryClientProvider client={queryClient}>
           <AppLayout>
@@ -356,24 +418,116 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+```
 
-// app/projects/[id]/page.tsx
-import { RealtimeChatUpdates } from '@/components/chat/RealtimeChatUpdates';
+**Includes:**
+- WebSocket provider wrapping entire app
+- Connection status indicator in header
+- Notification center in header
+- Responsive header and footer
+- Conditional rendering for auth pages
+- Dark mode support
+
+## Integration Patterns
+
+### Pattern 1: Chat with Real-time Updates
+
+```typescript
+'use client';
+
+import { useChatStream, useProjectRoom } from '@/lib/websocket';
+import { useRealtimeChatSync } from '@/components/chat/RealtimeChatUpdates';
+import { OfflineGuard } from '@/components/providers/WebSocketProvider';
+
+export default function ChatPage({
+  projectId,
+  chatId
+}: {
+  projectId: number;
+  chatId: number;
+}) {
+  // Join WebSocket room for this project
+  useProjectRoom(projectId);
+
+  // Auto-sync chat data when changes occur
+  useRealtimeChatSync(projectId, chatId);
+
+  // Stream messages
+  const { sendMessage } = useChatStream(chatId, {
+    onToken: (token) => appendToMessage(token),
+    onComplete: (metadata) => console.log('Message complete', metadata),
+    onError: (error) => console.error('Stream error:', error)
+  });
+
+  return (
+    <OfflineGuard>
+      <ChatInterface onSend={sendMessage} />
+    </OfflineGuard>
+  );
+}
+```
+
+### Pattern 2: Document Upload with Progress Tracking
+
+```typescript
+'use client';
+
+import { DocumentUpload } from '@/components/documents/DocumentUpload';
+import { DocumentProcessingStatus } from '@/components/documents/DocumentProcessingStatus';
+import { useNotifications } from '@/components/notifications/NotificationCenter';
+import { useQueryClient } from '@tanstack/react-query';
+
+export default function DocumentsPage({ projectId }: { projectId: number }) {
+  const notify = useNotifications();
+  const queryClient = useQueryClient();
+
+  const handleComplete = (docId: number) => {
+    notify.success('Processing Complete', 'Your document is ready');
+    queryClient.invalidateQueries(['documents', projectId]);
+  };
+
+  const handleError = (docId: number, error: string) => {
+    notify.error('Processing Failed', error);
+  };
+
+  return (
+    <div className="space-y-6">
+      <DocumentUpload projectId={projectId} />
+
+      <DocumentProcessingStatus
+        onComplete={handleComplete}
+        onError={handleError}
+      />
+    </div>
+  );
+}
+```
+
+### Pattern 3: Project Dashboard with All Features
+
+```typescript
+'use client';
+
 import { useProjectRoom } from '@/lib/websocket';
+import { RealtimeChatUpdates } from '@/components/chat/RealtimeChatUpdates';
+import { DocumentProcessingStatus } from '@/components/documents/DocumentProcessingStatus';
 
-export default function ProjectPage({ params }) {
-  const projectId = parseInt(params.id);
-
-  // Join project room
+export default function ProjectDashboard({ projectId }: { projectId: number }) {
+  // Join project room for all real-time updates
   useProjectRoom(projectId);
 
   return (
     <div>
-      {/* Listen to real-time updates */}
+      {/* Listen to chat updates */}
       <RealtimeChatUpdates projectId={projectId} />
 
-      {/* Rest of your page */}
-      <ProjectDashboard projectId={projectId} />
+      {/* Show document processing status */}
+      <DocumentProcessingStatus />
+
+      {/* Rest of dashboard */}
+      <ProjectOverview projectId={projectId} />
+      <ChatList projectId={projectId} />
+      <DocumentList projectId={projectId} />
     </div>
   );
 }
@@ -381,171 +535,317 @@ export default function ProjectPage({ params }) {
 
 ## Event Flow
 
-### Document Processing
+### Document Processing Flow
 
 ```
-1. User uploads document
-2. Backend starts processing
-3. Backend emits: document_status { document_id, status: 'processing', progress: 0 }
-4. Frontend shows DocumentProcessingStatus card
-5. Backend emits progress updates: progress: 25, 50, 75...
-6. Frontend updates progress bar
-7. Backend emits: status: 'completed', progress: 100
-8. Frontend shows success, triggers onComplete callback
-9. NotificationCenter shows "Document Processed" notification
-10. Card auto-removes after 3 seconds
+1. User uploads document via DocumentUpload component
+2. Backend starts processing and emits WebSocket event
+   → document_status { document_id: 1, status: 'processing', progress: 0 }
+3. DocumentProcessingStatus receives event and displays progress card
+4. Backend emits progress updates
+   → document_status { document_id: 1, status: 'processing', progress: 25 }
+   → document_status { document_id: 1, status: 'processing', progress: 50 }
+   → document_status { document_id: 1, status: 'processing', progress: 75 }
+5. Frontend updates progress bar in real-time
+6. Backend completes processing
+   → document_status { document_id: 1, status: 'completed', progress: 100 }
+7. Frontend triggers onComplete callback
+8. NotificationCenter shows "Document Processed" notification
+9. Progress card shows success state, auto-removes after 3 seconds
+10. React Query cache invalidated, document list refreshes
 ```
 
-### Chat Message
+### Chat Message Flow
 
 ```
-1. User sends message via WebSocket
-2. Backend processes with RAG pipeline
-3. Backend emits: message_sources
-4. Frontend updates sources
-5. Backend streams: message_token, message_token, message_token...
-6. Frontend appends tokens in real-time
-7. Backend emits: message_complete
-8. Backend emits: project_update { type: 'chat_message_added', data: {...} }
-9. RealtimeChatUpdates invalidates React Query cache
-10. Chat list auto-refreshes
+1. User sends message via sendMessage()
+2. Backend processes message with RAG pipeline
+3. Backend emits sources
+   → message_sources { chat_id: 1, sources: [...] }
+4. Frontend displays source documents
+5. Backend streams response tokens
+   → message_token { chat_id: 1, token: "Machine" }
+   → message_token { chat_id: 1, token: " learning" }
+   → message_token { chat_id: 1, token: " is..." }
+6. Frontend appends tokens in real-time to message display
+7. Backend completes streaming
+   → message_complete { chat_id: 1, metadata: {...} }
+8. Backend emits project update
+   → project_update { type: 'chat_message_added', data: {...} }
+9. RealtimeChatUpdates receives event
+10. React Query caches invalidated
+11. Chat list and message list auto-refresh
 ```
 
-### Offline/Online
+### Offline/Online Flow
 
 ```
-1. User goes offline (network disconnected)
+1. User loses network connection
 2. Browser fires 'offline' event
 3. WebSocketProvider detects offline status
-4. "You are offline" banner appears
+4. "You are offline" banner appears at top of page
 5. WebSocket automatically disconnects
-6. User comes back online
+6. User regains network connection
 7. Browser fires 'online' event
-8. WebSocketProvider auto-reconnects WebSocket
-9. Rejoins project rooms
-10. "Connection restored" banner shows for 3s
-11. All real-time features resume
+8. WebSocketProvider detects online status
+9. WebSocket auto-reconnects with exponential backoff
+10. Auto-rejoins all project rooms
+11. "Connection restored" banner shows briefly (3s)
+12. All real-time features resume normal operation
 ```
 
-## Styling & Customization
+## Best Practices
 
-All components use Tailwind CSS and support dark mode:
+### 1. Always Use WebSocketProvider
 
-```typescript
-// Custom progress bar color
-<Progress value={50} className="h-2 [&>div]:bg-blue-500" />
+```tsx
+// ✅ Good: Wrap entire app
+<WebSocketProvider>
+  <App />
+</WebSocketProvider>
 
-// Custom notification colors
-notify.success('Title', 'Message'); // Green
-notify.error('Title', 'Message');   // Red
-notify.info('Title', 'Message');    // Blue
+// ❌ Bad: Missing provider
+<App />  // Connection state unavailable
+```
 
-// Custom offline fallback
-<OfflineGuard fallback={<CustomOfflineComponent />}>
-  <YourComponent />
+### 2. Join Project Rooms
+
+```tsx
+// ✅ Good: Join room for real-time updates
+useProjectRoom(projectId);
+
+// ❌ Bad: Not joining room
+// Will not receive project-specific events
+```
+
+### 3. Clean Up Side Effects
+
+```tsx
+// ✅ Good: Hooks handle cleanup automatically
+useRealtimeChatSync(projectId, chatId);
+
+// ❌ Bad: Manual event listeners without cleanup
+useEffect(() => {
+  wsClient.onProjectUpdate(handleUpdate);
+  // Missing cleanup!
+}, []);
+```
+
+### 4. Handle Loading and Error States
+
+```tsx
+// ✅ Good: Complete state handling
+<DocumentProcessingStatus
+  onComplete={handleComplete}
+  onError={(id, error) => {
+    notify.error('Processing Failed', error);
+    logError(id, error);
+  }}
+/>
+
+// ❌ Bad: No error handling
+<DocumentProcessingStatus />
+```
+
+### 5. Use OfflineGuard for Critical Features
+
+```tsx
+// ✅ Good: Guard online-only features
+<OfflineGuard fallback={<OfflineMessage />}>
+  <ChatInterface />
 </OfflineGuard>
+
+// ❌ Bad: No offline handling
+<ChatInterface />  // Breaks when offline
 ```
 
-## Performance Considerations
+### 6. Invalidate React Query Caches
 
-- **React Query Integration:** Uses query invalidation instead of manual refetches
-- **Auto-cleanup:** Notifications and status cards auto-remove
-- **Event Throttling:** WebSocket events are batched where appropriate
-- **Memory Management:** Unsubscribes from all events on component unmount
-- **Smart Reconnection:** Exponential backoff, max 5 attempts
+```tsx
+// ✅ Good: Let RealtimeChatUpdates handle invalidation
+<RealtimeChatUpdates projectId={projectId} />
+
+// ❌ Bad: Manual polling
+useEffect(() => {
+  const interval = setInterval(() => {
+    queryClient.invalidateQueries(['chats']);
+  }, 5000);
+  return () => clearInterval(interval);
+}, []);
+```
 
 ## Troubleshooting
 
-### Notifications Not Showing
+### Notifications Not Appearing
 
-1. Ensure `NotificationCenter` is in your layout
-2. Check WebSocket connection status
-3. Verify you're in the correct project room
-4. Check browser console for errors
+**Problem:** NotificationCenter bell icon shows but notifications don't appear
 
-### Progress Not Updating
+**Solutions:**
+1. Verify `NotificationCenter` is mounted in your layout
+2. Check WebSocket connection status using `useWebSocket()`
+3. Ensure you've joined the correct project room with `useProjectRoom()`
+4. Check browser console for WebSocket errors
+5. Verify backend is emitting notification events
 
-1. Verify WebSocket is connected
-2. Check that document_id matches
-3. Ensure backend is emitting progress events
-4. Check DocumentProcessingStatus is mounted
+### Document Progress Not Updating
 
-### Real-time Updates Not Working
+**Problem:** Progress bar stays at 0% or doesn't move
 
-1. Check `RealtimeChatUpdates` is mounted
-2. Verify React Query is configured
+**Solutions:**
+1. Check WebSocket connection is active: `const { isConnected } = useWebSocket()`
+2. Verify `document_id` matches between upload and status component
+3. Check backend logs to ensure progress events are being emitted
+4. Ensure `DocumentProcessingStatus` component is mounted
+5. Test with browser Network tab WebSocket frames
+
+### Real-time Chat Sync Not Working
+
+**Problem:** Chat messages don't appear automatically
+
+**Solutions:**
+1. Verify `RealtimeChatUpdates` component is mounted
+2. Check React Query configuration is correct
 3. Ensure WebSocket connection is active
-4. Check project room is joined
+4. Verify project room is joined: `useProjectRoom(projectId)`
+5. Check query keys match between `RealtimeChatUpdates` and your queries
 
 ### Offline Detection Not Working
 
-1. Test by disabling network in DevTools
+**Problem:** Offline banner doesn't appear when disconnecting
+
+**Solutions:**
+1. Test by disabling network in Chrome DevTools (Network tab → Offline)
 2. Check browser console for online/offline events
-3. Verify WebSocketProvider is wrapping app
-4. Test auto-reconnect manually
+3. Verify `WebSocketProvider` is wrapping your app
+4. Ensure `showOfflineAlert` prop is `true` (default)
+5. Test auto-reconnect by re-enabling network
 
-## Files Created
+### Connection Not Auto-Reconnecting
 
-- `frontend/src/components/documents/DocumentProcessingStatus.tsx`
-- `frontend/src/components/notifications/NotificationCenter.tsx`
-- `frontend/src/components/chat/RealtimeChatUpdates.tsx`
-- `frontend/src/components/providers/WebSocketProvider.tsx`
-- `frontend/src/components/layout/AppLayout.tsx`
-- `frontend/src/components/ui/alert.tsx`
-- `frontend/LIVE_UPDATES_GUIDE.md`
+**Problem:** WebSocket stays disconnected after network returns
 
-## Testing
+**Solutions:**
+1. Check if maximum reconnection attempts (5) were exceeded
+2. Verify `autoConnect` prop is `true` on `WebSocketProvider`
+3. Check browser console for `reconnect_failed` events
+4. Manually reconnect using `connect()` from `useWebSocket()`
+5. Verify backend is accessible and WebSocket endpoint is available
 
-### Manual Testing Checklist
+### Performance Issues with Many Notifications
 
-- [ ] Upload document and watch progress update in real-time
-- [ ] Verify notification appears when document completes
-- [ ] Send chat message and see it appear instantly
-- [ ] Disconnect network and verify offline banner
-- [ ] Reconnect network and verify "Connection restored" message
-- [ ] Click reconnect button when WebSocket disconnects
-- [ ] Mark notifications as read
-- [ ] Clear all notifications
-- [ ] Join different projects and verify room switching
+**Problem:** UI lags with hundreds of notifications
 
-### Automated Testing
+**Solutions:**
+1. Clear old notifications regularly: "Clear all" button
+2. Implement notification limits in NotificationCenter
+3. Use virtualized list for notification dropdown
+4. Filter notifications by type or date range
+5. Consider persisting to localStorage and lazy loading
+
+## TypeScript API Reference
+
+### Component Props
 
 ```typescript
-// Example test for DocumentProcessingStatus
-import { render } from '@testing-library/react';
-import { DocumentProcessingStatus } from '@/components/documents/DocumentProcessingStatus';
+// DocumentProcessingStatus
+interface DocumentProcessingStatusProps {
+  documentId?: number;
+  onComplete?: (documentId: number) => void;
+  onError?: (documentId: number, error: string) => void;
+}
 
-test('shows processing status', () => {
-  const { getByText } = render(<DocumentProcessingStatus documentId={1} />);
-  // Trigger WebSocket event
-  wsClient.onDocumentStatus({ document_id: 1, status: 'processing', progress: 50 });
-  expect(getByText('50% complete')).toBeInTheDocument();
-});
+// DocumentStatusBadge
+interface DocumentStatusBadgeProps {
+  documentId: number;
+  showProgress?: boolean;
+}
+
+// RealtimeChatUpdates
+interface RealtimeChatUpdatesProps {
+  projectId: number;
+  onNewMessage?: (chatId: number) => void;
+  onChatUpdated?: (chatId: number) => void;
+  onChatDeleted?: (chatId: number) => void;
+}
+
+// WebSocketProvider
+interface WebSocketProviderProps {
+  children: ReactNode;
+  showOfflineAlert?: boolean;
+  autoConnect?: boolean;
+}
+
+// OfflineGuard
+interface OfflineGuardProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
 ```
 
-## Next Steps
+### Hook Returns
 
-With Task 8.3 complete, you can:
+```typescript
+// useWebSocket
+interface UseWebSocketReturn {
+  status: ConnectionStatus;
+  isConnected: boolean;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+}
 
-1. **Integrate into existing pages:** Add components to your project/chat pages
-2. **Customize styling:** Match your brand colors and theme
-3. **Add more notification types:** Extend NotificationCenter for custom events
-4. **Implement persistence:** Save notification history to localStorage
-5. **Add filters:** Filter notifications by type or date
-6. **Analytics:** Track notification engagement
+type ConnectionStatus =
+  | 'connected'
+  | 'disconnected'
+  | 'connecting'
+  | 'reconnecting'
+  | 'error';
 
-## Summary
+// useNotifications
+interface UseNotificationsReturn {
+  success: (title: string, message?: string) => void;
+  error: (title: string, message?: string) => void;
+  info: (title: string, message?: string) => void;
+}
 
-Task 8.3 provides a complete real-time update system:
+// useOnlineStatus
+function useOnlineStatus(): boolean;
 
-- ✅ Live document processing with progress bars
-- ✅ Centralized notification center
-- ✅ Automatic chat synchronization
-- ✅ Offline/online handling
-- ✅ Connection status indicators
-- ✅ WebSocket provider for app-wide state
-- ✅ Comprehensive error handling
-- ✅ Dark mode support
-- ✅ Fully typed TypeScript API
+// useRealtimeChatSync
+function useRealtimeChatSync(projectId: number, chatId?: number): void;
+```
 
-All features work seamlessly with the WebSocket implementation from Tasks 8.1 and 8.2!
+### Event Types
+
+```typescript
+// Document status event
+interface DocumentStatusEvent {
+  document_id: number;
+  status: 'processing' | 'completed' | 'failed';
+  progress?: number;  // 0-100
+  error?: string;
+}
+
+// Notification event
+interface NotificationEvent {
+  id: string;
+  type: 'document' | 'project' | 'system';
+  title: string;
+  message?: string;
+  timestamp: string;
+  read: boolean;
+}
+
+// Project update event
+interface ProjectUpdateEvent {
+  type: string;
+  data: Record<string, any>;
+}
+```
+
+## Additional Resources
+
+- [WebSocket Integration Documentation](./WEBSOCKET_INTEGRATION.md) - Low-level WebSocket API
+- [Components Documentation](./COMPONENTS_README.md) - UI component library
+- [State Management](./STATE_MANAGEMENT.md) - React Query and Zustand patterns
+- [Socket.IO Client Documentation](https://socket.io/docs/v4/client-api/)
+- [React Query Documentation](https://tanstack.com/query/latest/docs/react/overview)
