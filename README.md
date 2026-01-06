@@ -359,6 +359,75 @@ This will check:
 
 ## Acknowledgments
 
-- Built with [Ollama](https://ollama.com)
-- UI components from [shadcn/ui](https://ui.shadcn.com)
-- Powered by [FastAPI](https://fastapi.tiangolo.com) and [Next.js](https://nextjs.org)
+This project is built on the shoulders of many incredible open source projects. We are grateful to all the maintainers and contributors.
+
+### Core Technologies
+
+- **[Ollama](https://ollama.com)** - Local LLM inference engine
+- **[FastAPI](https://fastapi.tiangolo.com)** - Modern, high-performance Python web framework
+- **[Next.js](https://nextjs.org)** - The React framework for production
+- **[TypeScript](https://www.typescriptlang.org)** - Typed superset of JavaScript
+
+### Backend Infrastructure
+
+- **[Uvicorn](https://www.uvicorn.org)** - Lightning-fast ASGI server
+- **[SQLAlchemy](https://www.sqlalchemy.org)** - Python SQL toolkit and ORM
+- **[Alembic](https://alembic.sqlalchemy.org)** - Database migration tool
+- **[ChromaDB](https://www.trychroma.com)** - AI-native open-source vector database
+- **[LangChain](https://www.langchain.com)** - Building applications with LLMs
+- **[Pydantic](https://pydantic.dev)** - Data validation using Python type annotations
+- **[python-socketio](https://python-socketio.readthedocs.io)** - Real-time bidirectional communication
+
+### Document Processing
+
+- **[PyPDF](https://pypdf.readthedocs.io)** - PDF file processing
+- **[python-docx](https://python-docx.readthedocs.io)** - Microsoft Word document handling
+- **[openpyxl](https://openpyxl.readthedocs.io)** - Excel file processing
+- **[unstructured](https://unstructured.io)** - Document preprocessing and ETL
+
+### Analytics & ML
+
+- **[scikit-learn](https://scikit-learn.org)** - Machine learning library (PCA, t-SNE)
+- **[UMAP](https://umap-learn.readthedocs.io)** - Dimension reduction and visualization
+- **[tiktoken](https://github.com/openai/tiktoken)** - Fast BPE tokenizer
+
+### Frontend UI Framework
+
+- **[Tailwind CSS](https://tailwindcss.com)** - Utility-first CSS framework
+- **[shadcn/ui](https://ui.shadcn.com)** - Re-usable component collection
+- **[Radix UI](https://www.radix-ui.com)** - Unstyled, accessible UI primitives
+- **[Lucide React](https://lucide.dev)** - Beautiful & consistent icon toolkit
+
+### Frontend State & Data Management
+
+- **[Zustand](https://zustand-demo.pmnd.rs)** - Small, fast state management
+- **[TanStack Query](https://tanstack.com/query)** - Powerful asynchronous state management
+- **[React Hook Form](https://react-hook-form.com)** - Performant, flexible forms
+- **[Zod](https://zod.dev)** - TypeScript-first schema validation
+
+### Real-time & Communication
+
+- **[Socket.IO](https://socket.io)** - Real-time bidirectional event-based communication
+- **[Axios](https://axios-http.com)** - Promise-based HTTP client
+
+### Data Visualization
+
+- **[Plotly.js](https://plotly.com/javascript)** - Interactive graphing library
+- **[Recharts](https://recharts.org)** - Composable charting library built on React
+
+### Development Tools
+
+- **[Black](https://black.readthedocs.io)** - The uncompromising Python code formatter
+- **[Pylint](https://pylint.pycqa.org)** - Python static code analysis
+- **[ESLint](https://eslint.org)** - JavaScript and TypeScript linting
+- **[Prettier](https://prettier.io)** - Opinionated code formatter
+- **[pytest](https://pytest.org)** - Python testing framework
+
+### Additional Libraries
+
+- **[React Markdown](https://remarkjs.github.io/react-markdown)** - Markdown component for React
+- **[React Syntax Highlighter](https://github.com/react-syntax-highlighter/react-syntax-highlighter)** - Syntax highlighting component
+- **[React Dropzone](https://react-dropzone.js.org)** - File upload with drag-and-drop
+- **[Framer Motion](https://www.framer.com/motion)** - Production-ready animation library
+- **[date-fns](https://date-fns.org)** - Modern JavaScript date utility library
+- **[clsx](https://github.com/lukeed/clsx)** & **[tailwind-merge](https://github.com/dcastil/tailwind-merge)** - Utility for constructing className strings
